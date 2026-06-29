@@ -23,6 +23,10 @@ function makeOld(over: Partial<RatesPayload> = {}): RatesPayload {
       fonteUrl: "https://caixanoticias.caixa.gov.br/x",
       atualizadoEm: "2026-06-01T00:00:00.000Z",
     },
+    mcmv: {
+      tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
+      subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+    },
     meta: {
       sourceUrl: SOURCE,
       sourceName: "Ministério das Cidades — MCMV Linha Financiada",

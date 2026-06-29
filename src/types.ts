@@ -16,6 +16,7 @@ export interface RatesPayload {
   classeMedia: number;
   indexers: { trMonthlyPct: number; poupancaMonthlyPct: number };
   cotaMaxima: CotaMaxima;
+  mcmv: McmvLimits;
   meta: {
     sourceUrl: string;
     sourceName: string;
@@ -52,4 +53,11 @@ export interface CotaRaw {
   sac: number;
   price: number;
   fonteUrl: string;
+}
+
+// Limites do MCMV (teto do imóvel por faixa + subsídio máximo por região). Aditivo ao contrato.
+// Fonte: mesma página gov.br das taxas (datada por meta.publishedAt/retrievedAt).
+export interface McmvLimits {
+  tetoImovel: { faixa1e2: { min: number; max: number }; faixa3: number; classeMedia: number };
+  subsidioMaxPorRegiao: { N: number; demais: number };
 }
