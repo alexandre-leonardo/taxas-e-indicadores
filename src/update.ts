@@ -1,7 +1,7 @@
 // src/update.ts
 // Núcleo de decisão — lógica PURA, sem I/O (rede ou disco). Testável em isolamento.
 import { createHash } from "node:crypto";
-import type { CotaRaw, IndexersRaw, ParsedRates, RatesPayload } from "./types";
+import type { CotaRaw, IndexersRaw, McmvLimits, ParsedRates, RatesPayload } from "./types";
 
 export const SOURCE_NAME = "Ministério das Cidades — MCMV Linha Financiada";
 
@@ -28,6 +28,19 @@ export function isCotaPlausible(c: CotaRaw | null): c is CotaRaw {
   return host === "gov.br" || host.endsWith(".gov.br");
 }
 
+/** Limites MCMV plausíveis: tetos em 50k–5M (max≥min), subsídios em 1k–500k. */
+export function isMcmvPlausible(m: McmvLimits | null): m is McmvLimits {
+  if (!m || !m.tetoImovel || !m.subsidioMaxPorRegiao) return false;
+  const t = m.tetoImovel;
+  const inRange = (v: unknown, lo: number, hi: number): boolean =>
+    typeof v === "number" && !Number.isNaN(v) && v >= lo && v <= hi;
+  const tetos = [t.faixa1e2?.min, t.faixa1e2?.max, t.faixa3, t.classeMedia];
+  if (!tetos.every((v) => inRange(v, 50_000, 5_000_000))) return false;
+  if (t.faixa1e2.max < t.faixa1e2.min) return false;
+  const subs = [m.subsidioMaxPorRegiao.N, m.subsidioMaxPorRegiao.demais];
+  return subs.every((v) => inRange(v, 1_000, 500_000));
+}
+
 /**
  * Decide se o JSON deve ser reescrito.
  *
@@ -43,6 +56,7 @@ export function decideUpdate(
   parsed: ParsedRates,
   raw: IndexersRaw,
   cotaRaw: CotaRaw | null,
+  mcmvRaw: McmvLimits | null,
   now: Date,
   sourceUrl: string,
 ): { changed: boolean; payload: RatesPayload } {
@@ -71,11 +85,21 @@ export function decideUpdate(
     };
   }
 
+  // MCMV: parse determinístico do gov.br. Estável (sem churn); preserva old se implausível.
+  // ponytail: 7 params posicionais — se entrar um 4º source, agrupar num objeto `sources`.
+  let mcmv = old.mcmv;
+  let mcmvChanged = false;
+  if (isMcmvPlausible(mcmvRaw) && JSON.stringify(mcmvRaw) !== JSON.stringify(old.mcmv)) {
+    mcmvChanged = true;
+    mcmv = mcmvRaw;
+  }
+
   const changed =
     old.meta.contentHash !== contentHash ||
     old.indexers.trMonthlyPct !== tr ||
     old.indexers.poupancaMonthlyPct !== poup ||
-    cotaChanged;
+    cotaChanged ||
+    mcmvChanged;
 
   if (!changed) return { changed: false, payload: old };
 
@@ -85,6 +109,7 @@ export function decideUpdate(
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },
     cotaMaxima,
+    mcmv,
     meta: {
       sourceUrl,
       sourceName: SOURCE_NAME,

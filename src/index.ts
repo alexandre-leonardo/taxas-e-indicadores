@@ -3,7 +3,7 @@
 // Exit 1 em dados implausíveis ou erro fatal (faz a GitHub Action falhar = alerta visível).
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { isPlausible, parseMcmvRatesHtml } from "./parser";
+import { isPlausible, parseMcmvLimits, parseMcmvRatesHtml } from "./parser";
 import { decideUpdate } from "./update";
 import { fetchGovBrHtml, fetchIndexers, fetchCotaMaxima, SOURCE_URL } from "./sources";
 import type { RatesPayload } from "./types";
@@ -33,8 +33,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const mcmvRaw = parseMcmvLimits(html);
   const [raw, cotaRaw] = await Promise.all([fetchIndexers(), fetchCotaMaxima()]);
-  const { changed, payload } = decideUpdate(old, parsed, raw, cotaRaw, new Date(), SOURCE_URL);
+  const { changed, payload } = decideUpdate(old, parsed, raw, cotaRaw, mcmvRaw, new Date(), SOURCE_URL);
 
   if (!changed) {
     console.log("[scrape] unchanged — nada a commitar.");
@@ -46,7 +47,8 @@ async function main(): Promise<void> {
     `[scrape] atualizado — publishedAt=${payload.meta.publishedAt} ` +
       `retrievedAt=${payload.meta.retrievedAt} ` +
       `tr=${payload.indexers.trMonthlyPct} poup=${payload.indexers.poupancaMonthlyPct} ` +
-      `cota=SAC ${payload.cotaMaxima.sbpe.sac}%/Price ${payload.cotaMaxima.sbpe.price}%`,
+      `cota=SAC ${payload.cotaMaxima?.sbpe?.sac ?? "—"}%/Price ${payload.cotaMaxima?.sbpe?.price ?? "—"}% ` +
+      `tetoCM=${payload.mcmv?.tetoImovel?.classeMedia ?? "—"}`,
   );
 }
 

@@ -6,7 +6,7 @@
 // Faixa 2 — janela 300 chars captura os 4 valores do 1º sub-bracket.
 // Faixa 3 — 2 valores; cotista === naoCotista (tabela tem uma linha só).
 // publishedAt — "Atualizado em DD/MM/YYYY" no rodapé (busca na página inteira).
-import type { ParsedRates } from "./types";
+import type { McmvLimits, ParsedRates } from "./types";
 
 /** "4,75%" → 4.75 */
 function pct(raw: string): number {
@@ -48,6 +48,35 @@ export function parseMcmvRatesHtml(html: string): ParsedRates {
     },
     classeMedia: cm[0],
     publishedAt: dt ? dt[1] : null,
+  };
+}
+
+/**
+ * Extrai os limites do MCMV (teto por faixa + subsídio máximo por região) da prosa do gov.br.
+ * Determinístico (sem LLM). null se qualquer trecho não casar (layout mudou → preserva old no caller).
+ * Formatos: "R$ 210 mil" → ×1000; "R$ 65.000,00" → número BR.
+ */
+export function parseMcmvLimits(html: string): McmvLimits | null {
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+  const f12 = text.match(/varia de R\$\s*(\d[\d.]*)\s*mil a R\$\s*(\d[\d.]*)\s*mil/i);
+  const f3 = text.match(/\(Faixa\s*3\)[^.]*?R\$\s*(\d[\d.]*)\s*mil/i);
+  const cm = text.match(/limitado a R\$\s*(\d[\d.]*)\s*mil/i);
+  const sub = text.match(
+    /at[ée] R\$\s*(\d[\d.]*,\d{2}),?\s*na Regi[ãa]o Norte,\s*e at[ée] R\$\s*(\d[\d.]*,\d{2}),?\s*nas demais/i,
+  );
+  if (!f12 || !f3 || !cm || !sub) return null;
+
+  const mil = (s: string) => parseInt(s.replace(/\./g, ""), 10) * 1000; // "210" → 210000
+  const brl = (s: string) => Math.round(parseFloat(s.replace(/\./g, "").replace(",", "."))); // "65.000,00" → 65000
+
+  return {
+    tetoImovel: {
+      faixa1e2: { min: mil(f12[1]), max: mil(f12[2]) },
+      faixa3: mil(f3[1]),
+      classeMedia: mil(cm[1]),
+    },
+    subsidioMaxPorRegiao: { N: brl(sub[1]), demais: brl(sub[2]) },
   };
 }
 

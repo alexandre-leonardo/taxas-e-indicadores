@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseMcmvRatesHtml, isPlausible } from "../src/parser";
+import { parseMcmvRatesHtml, isPlausible, parseMcmvLimits } from "../src/parser";
 
 const html = readFileSync(
   fileURLToPath(new URL("./fixtures/mcmv-govbr.html", import.meta.url)),
@@ -50,5 +50,18 @@ describe("isPlausible", () => {
   it("layout quebrado (sem âncora) → implausível", () => {
     const r = parseMcmvRatesHtml("<html><body>página sem tabela de taxas</body></html>");
     expect(isPlausible(r)).toBe(false);
+  });
+});
+
+describe("parseMcmvLimits", () => {
+  it("extrai teto e subsídio da fixture real", () => {
+    const m = parseMcmvLimits(html);
+    expect(m).toEqual({
+      tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
+      subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+    });
+  });
+  it("retorna null se a prosa não estiver presente", () => {
+    expect(parseMcmvLimits("<p>página sem os limites</p>")).toBeNull();
   });
 });

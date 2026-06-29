@@ -12,15 +12,17 @@ jsDelivr. Sem banco, sem servidor — o git é o "banco" (cada commit = uma vers
   `src/sources.ts:fetchCotaMaxima`. Guarda anti-lixo (`src/update.ts:isCotaPlausible`): só publica
   se plausível (30–100, price≤sac) e de domínio oficial `gov.br`. Sem `OPENROUTER_API_KEY`, o
   scrape preserva a cota anterior. Requer o secret `OPENROUTER_API_KEY` no repo.
+- Os limites do MCMV (`mcmv`: teto do imóvel por faixa + subsídio máximo por região) saem por parser
+  determinístico do MESMO HTML do gov.br (`src/parser.ts:parseMcmvLimits`), sem LLM. Guarda
+  `src/update.ts:isMcmvPlausible` preserva o valor anterior se o layout mudar.
 - A GitHub Action (`.github/workflows/update-rates.yml`) roda toda segunda 08h BRT (e sob demanda
   via `workflow_dispatch`), testa, raspa e commita a mudança; depois faz purge do jsDelivr.
 - Consumidores leem o JSON via CDN e caem num seed embutido se o fetch falhar.
 
 ## Contrato
 
-`data/taxas-financiamento.json` segue o tipo `RatesPayload` (`src/types.ts`). O campo `cotaMaxima`
-foi adicionado (aditivo — consumidores que não o conhecem ignoram a chave). Não alterar o shape
-dos campos existentes sem migrar todos os consumidores.
+`data/taxas-financiamento.json` segue o tipo `RatesPayload` (`src/types.ts`) — **idêntico** ao usado
+pelo engaja-amiz. Não alterar o shape sem migrar todos os consumidores.
 
 ## URL pública
 
