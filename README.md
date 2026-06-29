@@ -21,6 +21,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/da
   "classeMedia": 10,
   "indexers": { "trMonthlyPct": 0.1709, "poupancaMonthlyPct": 0.6734 },
   "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2026-06-29T00:00:00.000Z" },
+  "mcmv": { "tetoImovel": { "faixa1e2": { "min": 210000, "max": 275000 }, "faixa3": 400000, "classeMedia": 600000 }, "subsidioMaxPorRegiao": { "N": 65000, "demais": 55000 } },
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/...",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
@@ -36,6 +37,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/da
 - `classeMedia`: taxa nominal anual (%).
 - `indexers`: TR e poupança mensais (%) do BCB.
 - `cotaMaxima.sbpe.sac` / `.price`: percentual máximo do valor do imóvel financiável pelo SBPE (SAC e Price), extraído via LLM de fonte oficial. Atualizado quando muda.
+- `mcmv.tetoImovel`: teto do valor do imóvel por faixa MCMV em reais (`faixa1e2` é range por município — `min`/`max` nacionais; `faixa3` e `classeMedia` são valores únicos). `mcmv.subsidioMaxPorRegiao`: teto do subsídio (desconto) por região (`N` = Norte, `demais` = demais regiões) — é o máximo possível, não o valor que cada família recebe.
 - `meta.retrievedAt`: quando o dado foi raspado. `meta.publishedAt`: data informada pelo gov.br.
 - `meta.rulesStale`: sempre `false` no arquivo; **o cliente recalcula** por idade (ver abaixo).
 

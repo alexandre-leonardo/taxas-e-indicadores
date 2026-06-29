@@ -50,6 +50,20 @@ Cuidados:
 - **Escopo:** é SBPE (SAC/Price). MCMV não tem cota no payload — lá o limite é entrada mínima +
   subsídio, não este campo.
 
+## mcmv — teto do imóvel + subsídio (novo)
+
+Mesmo JSON, chave nova. `mcmv.tetoImovel` (em reais) e `mcmv.subsidioMaxPorRegiao` (teto por região):
+
+```ts
+const teto = rates.mcmv?.tetoImovel.classeMedia;       // 600000
+const subsidioMax = rates.mcmv?.subsidioMaxPorRegiao.N; // 65000 (Norte)
+```
+
+Ressalvas: `tetoImovel.faixa1e2` é um range nacional (`min`/`max`) — o valor exato por município
+vive na planilha da Caixa (não raspada). `subsidioMaxPorRegiao` é o **teto** do desconto, não o
+valor que cada família recebe (depende de renda/região/valor). Tipar `mcmv?` opcional e ter fallback,
+como a `cotaMaxima`.
+
 ## projeto-simuladores
 
 Arquivo: `src/hooks/useFinancingRates.ts` (hoje retorna `RATES_BOOTSTRAP` fixo).
