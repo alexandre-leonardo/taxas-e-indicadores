@@ -43,13 +43,13 @@ const now = new Date("2026-06-27T12:00:00.000Z");
 
 describe("decideUpdate", () => {
   it("não muda quando faixas e indexers são iguais", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.1709, poupRaw: 0.6734 }, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.1709, poupRaw: 0.6734 }, null, null, now, SOURCE);
     expect(r.changed).toBe(false);
   });
 
   it("muda quando as faixas mudam (contentHash novo)", () => {
     const parsedNovo = { ...parsed, classeMedia: 11 };
-    const r = decideUpdate(makeOld(), parsedNovo, { trRaw: 0.1709, poupRaw: 0.6734 }, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsedNovo, { trRaw: 0.1709, poupRaw: 0.6734 }, null, null, now, SOURCE);
     expect(r.changed).toBe(true);
     expect(r.payload.classeMedia).toBe(11);
     expect(r.payload.meta.contentHash).not.toBe(makeOld().meta.contentHash);
@@ -58,21 +58,21 @@ describe("decideUpdate", () => {
   });
 
   it("muda quando só os indexers mudam (faixas iguais)", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.2, poupRaw: 0.7 }, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.2, poupRaw: 0.7 }, null, null, now, SOURCE);
     expect(r.changed).toBe(true);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.2);
     expect(r.payload.indexers.poupancaMonthlyPct).toBe(0.7);
   });
 
   it("guarda anti-zero: BCB null preserva indexers antigos e não marca changed", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: null, poupRaw: null }, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: null, poupRaw: null }, null, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.1709);
     expect(r.payload.indexers.poupancaMonthlyPct).toBe(0.6734);
   });
 
   it("guarda anti-zero: BCB 0 preserva indexers antigos", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0, poupRaw: 0 }, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0, poupRaw: 0 }, null, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.1709);
   });
@@ -121,7 +121,7 @@ describe("decideUpdate — cota", () => {
   const oficial = "https://caixanoticias.caixa.gov.br/y";
 
   it("cota null mantém old.cotaMaxima e não marca changed", () => {
-    const r = decideUpdate(makeOld(), parsed, same, null, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, same, null, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.cotaMaxima).toEqual(makeOld().cotaMaxima);
   });
@@ -132,6 +132,7 @@ describe("decideUpdate — cota", () => {
       parsed,
       same,
       { sac: 70, price: 60, fonteUrl: oficial },
+      null,
       now,
       SOURCE,
     );
@@ -147,6 +148,7 @@ describe("decideUpdate — cota", () => {
       parsed,
       same,
       { sac: 70, price: 80, fonteUrl: oficial },
+      null,
       now,
       SOURCE,
     );
@@ -160,6 +162,7 @@ describe("decideUpdate — cota", () => {
       parsed,
       same,
       { sac: 75, price: 65, fonteUrl: "https://blog.com.br/x" },
+      null,
       now,
       SOURCE,
     );
@@ -172,6 +175,7 @@ describe("decideUpdate — cota", () => {
       parsed,
       same,
       { sac: 80, price: 70, fonteUrl: "https://caixanoticias.caixa.gov.br/OUTRA" },
+      null,
       now,
       SOURCE,
     );
@@ -188,6 +192,7 @@ describe("decideUpdate — cota", () => {
       parsed,
       same,
       { sac: 80, price: 70, fonteUrl: oficial2 },
+      null,
       now,
       SOURCE,
     );
@@ -220,5 +225,41 @@ describe("isMcmvPlausible", () => {
   });
   it("rejeita campo faltando", () => {
     expect(isMcmvPlausible({ tetoImovel: ok.tetoImovel } as never)).toBe(false);
+  });
+});
+
+describe("decideUpdate — mcmv", () => {
+  const same = { trRaw: 0.1709, poupRaw: 0.6734 };
+  const okMcmv = {
+    tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
+    subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+  };
+
+  it("mcmv null mantém old.mcmv e não marca changed", () => {
+    const r = decideUpdate(makeOld(), parsed, same, null, null, now, SOURCE);
+    expect(r.changed).toBe(false);
+    expect(r.payload.mcmv).toEqual(makeOld().mcmv);
+  });
+
+  it("publica quando o teto muda", () => {
+    const novo = { ...okMcmv, tetoImovel: { ...okMcmv.tetoImovel, classeMedia: 650000 } };
+    const r = decideUpdate(makeOld(), parsed, same, null, novo, now, SOURCE);
+    expect(r.changed).toBe(true);
+    expect(r.payload.mcmv.tetoImovel.classeMedia).toBe(650000);
+  });
+
+  it("mcmv implausível mantém old e não publica", () => {
+    const ruim = { ...okMcmv, subsidioMaxPorRegiao: { N: 9_000_000, demais: 55000 } };
+    const r = decideUpdate(makeOld(), parsed, same, null, ruim, now, SOURCE);
+    expect(r.changed).toBe(false);
+    expect(r.payload.mcmv).toEqual(makeOld().mcmv);
+  });
+
+  it("seed pré-feature sem mcmv: não quebra e publica o mcmv novo", () => {
+    const oldSemMcmv = makeOld();
+    delete (oldSemMcmv as { mcmv?: unknown }).mcmv;
+    const r = decideUpdate(oldSemMcmv, parsed, same, null, okMcmv, now, SOURCE);
+    expect(r.changed).toBe(true);
+    expect(r.payload.mcmv).toEqual(okMcmv);
   });
 });

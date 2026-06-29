@@ -56,6 +56,7 @@ export function decideUpdate(
   parsed: ParsedRates,
   raw: IndexersRaw,
   cotaRaw: CotaRaw | null,
+  mcmvRaw: McmvLimits | null,
   now: Date,
   sourceUrl: string,
 ): { changed: boolean; payload: RatesPayload } {
@@ -84,11 +85,21 @@ export function decideUpdate(
     };
   }
 
+  // MCMV: parse determinístico do gov.br. Estável (sem churn); preserva old se implausível.
+  // ponytail: 7 params posicionais — se entrar um 4º source, agrupar num objeto `sources`.
+  let mcmv = old.mcmv;
+  let mcmvChanged = false;
+  if (isMcmvPlausible(mcmvRaw) && JSON.stringify(mcmvRaw) !== JSON.stringify(old.mcmv)) {
+    mcmvChanged = true;
+    mcmv = mcmvRaw;
+  }
+
   const changed =
     old.meta.contentHash !== contentHash ||
     old.indexers.trMonthlyPct !== tr ||
     old.indexers.poupancaMonthlyPct !== poup ||
-    cotaChanged;
+    cotaChanged ||
+    mcmvChanged;
 
   if (!changed) return { changed: false, payload: old };
 
@@ -98,6 +109,7 @@ export function decideUpdate(
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },
     cotaMaxima,
+    mcmv,
     meta: {
       sourceUrl,
       sourceName: SOURCE_NAME,
