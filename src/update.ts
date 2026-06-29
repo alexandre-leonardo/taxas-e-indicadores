@@ -42,6 +42,7 @@ export function decideUpdate(
   old: RatesPayload,
   parsed: ParsedRates,
   raw: IndexersRaw,
+  cotaRaw: CotaRaw | null,
   now: Date,
   sourceUrl: string,
 ): { changed: boolean; payload: RatesPayload } {
@@ -54,10 +55,27 @@ export function decideUpdate(
       ? raw.poupRaw
       : old.indexers.poupancaMonthlyPct;
 
+  // Cota: só publica se plausível E o número (sac/price) mudou. fonteUrl varia entre runs
+  // com o mesmo valor — comparar fonteUrl geraria commit semanal espúrio.
+  let cotaMaxima = old.cotaMaxima;
+  let cotaChanged = false;
+  if (
+    isCotaPlausible(cotaRaw) &&
+    (cotaRaw.sac !== old.cotaMaxima.sbpe.sac || cotaRaw.price !== old.cotaMaxima.sbpe.price)
+  ) {
+    cotaChanged = true;
+    cotaMaxima = {
+      sbpe: { sac: cotaRaw.sac, price: cotaRaw.price },
+      fonteUrl: cotaRaw.fonteUrl,
+      atualizadoEm: now.toISOString(),
+    };
+  }
+
   const changed =
     old.meta.contentHash !== contentHash ||
     old.indexers.trMonthlyPct !== tr ||
-    old.indexers.poupancaMonthlyPct !== poup;
+    old.indexers.poupancaMonthlyPct !== poup ||
+    cotaChanged;
 
   if (!changed) return { changed: false, payload: old };
 
@@ -66,6 +84,7 @@ export function decideUpdate(
     faixa3: parsed.faixa3,
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },
+    cotaMaxima,
     meta: {
       sourceUrl,
       sourceName: SOURCE_NAME,

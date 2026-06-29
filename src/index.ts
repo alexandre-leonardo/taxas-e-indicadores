@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isPlausible, parseMcmvRatesHtml } from "./parser";
 import { decideUpdate } from "./update";
-import { fetchGovBrHtml, fetchIndexers, SOURCE_URL } from "./sources";
+import { fetchGovBrHtml, fetchIndexers, fetchCotaMaxima, SOURCE_URL } from "./sources";
 import type { RatesPayload } from "./types";
 
 // Caminho relativo a src/ — o JSON-banco vive na raiz do repo, em data/.
@@ -33,8 +33,8 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const raw = await fetchIndexers();
-  const { changed, payload } = decideUpdate(old, parsed, raw, new Date(), SOURCE_URL);
+  const [raw, cotaRaw] = await Promise.all([fetchIndexers(), fetchCotaMaxima()]);
+  const { changed, payload } = decideUpdate(old, parsed, raw, cotaRaw, new Date(), SOURCE_URL);
 
   if (!changed) {
     console.log("[scrape] unchanged — nada a commitar.");
@@ -45,7 +45,8 @@ async function main(): Promise<void> {
   console.log(
     `[scrape] atualizado — publishedAt=${payload.meta.publishedAt} ` +
       `retrievedAt=${payload.meta.retrievedAt} ` +
-      `tr=${payload.indexers.trMonthlyPct} poup=${payload.indexers.poupancaMonthlyPct}`,
+      `tr=${payload.indexers.trMonthlyPct} poup=${payload.indexers.poupancaMonthlyPct} ` +
+      `cota=SAC ${payload.cotaMaxima.sbpe.sac}%/Price ${payload.cotaMaxima.sbpe.price}%`,
   );
 }
 

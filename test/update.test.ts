@@ -39,13 +39,13 @@ const now = new Date("2026-06-27T12:00:00.000Z");
 
 describe("decideUpdate", () => {
   it("não muda quando faixas e indexers são iguais", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.1709, poupRaw: 0.6734 }, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.1709, poupRaw: 0.6734 }, null, now, SOURCE);
     expect(r.changed).toBe(false);
   });
 
   it("muda quando as faixas mudam (contentHash novo)", () => {
     const parsedNovo = { ...parsed, classeMedia: 11 };
-    const r = decideUpdate(makeOld(), parsedNovo, { trRaw: 0.1709, poupRaw: 0.6734 }, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsedNovo, { trRaw: 0.1709, poupRaw: 0.6734 }, null, now, SOURCE);
     expect(r.changed).toBe(true);
     expect(r.payload.classeMedia).toBe(11);
     expect(r.payload.meta.contentHash).not.toBe(makeOld().meta.contentHash);
@@ -54,21 +54,21 @@ describe("decideUpdate", () => {
   });
 
   it("muda quando só os indexers mudam (faixas iguais)", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.2, poupRaw: 0.7 }, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0.2, poupRaw: 0.7 }, null, now, SOURCE);
     expect(r.changed).toBe(true);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.2);
     expect(r.payload.indexers.poupancaMonthlyPct).toBe(0.7);
   });
 
   it("guarda anti-zero: BCB null preserva indexers antigos e não marca changed", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: null, poupRaw: null }, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: null, poupRaw: null }, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.1709);
     expect(r.payload.indexers.poupancaMonthlyPct).toBe(0.6734);
   });
 
   it("guarda anti-zero: BCB 0 preserva indexers antigos", () => {
-    const r = decideUpdate(makeOld(), parsed, { trRaw: 0, poupRaw: 0 }, now, SOURCE);
+    const r = decideUpdate(makeOld(), parsed, { trRaw: 0, poupRaw: 0 }, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.1709);
   });
@@ -109,5 +109,69 @@ describe("isCotaPlausible", () => {
   });
   it("rejeita valores NaN", () => {
     expect(isCotaPlausible({ ...ok, sac: NaN })).toBe(false);
+  });
+});
+
+describe("decideUpdate — cota", () => {
+  const same = { trRaw: 0.1709, poupRaw: 0.6734 }; // indexers iguais ao makeOld
+  const oficial = "https://caixanoticias.caixa.gov.br/y";
+
+  it("cota null mantém old.cotaMaxima e não marca changed", () => {
+    const r = decideUpdate(makeOld(), parsed, same, null, now, SOURCE);
+    expect(r.changed).toBe(false);
+    expect(r.payload.cotaMaxima).toEqual(makeOld().cotaMaxima);
+  });
+
+  it("publica quando sac/price mudam (atualizadoEm e fonteUrl novos)", () => {
+    const r = decideUpdate(
+      makeOld(),
+      parsed,
+      same,
+      { sac: 70, price: 60, fonteUrl: oficial },
+      now,
+      SOURCE,
+    );
+    expect(r.changed).toBe(true);
+    expect(r.payload.cotaMaxima.sbpe).toEqual({ sac: 70, price: 60 });
+    expect(r.payload.cotaMaxima.fonteUrl).toBe(oficial);
+    expect(r.payload.cotaMaxima.atualizadoEm).toBe(now.toISOString());
+  });
+
+  it("cota implausível (price>sac) mantém old e não publica", () => {
+    const r = decideUpdate(
+      makeOld(),
+      parsed,
+      same,
+      { sac: 70, price: 80, fonteUrl: oficial },
+      now,
+      SOURCE,
+    );
+    expect(r.changed).toBe(false);
+    expect(r.payload.cotaMaxima).toEqual(makeOld().cotaMaxima);
+  });
+
+  it("cota de fonte não-oficial mantém old", () => {
+    const r = decideUpdate(
+      makeOld(),
+      parsed,
+      same,
+      { sac: 75, price: 65, fonteUrl: "https://blog.com.br/x" },
+      now,
+      SOURCE,
+    );
+    expect(r.changed).toBe(false);
+  });
+
+  it("anti-churn: sac/price iguais com fonteUrl diferente NÃO publica", () => {
+    const r = decideUpdate(
+      makeOld(),
+      parsed,
+      same,
+      { sac: 80, price: 70, fonteUrl: "https://caixanoticias.caixa.gov.br/OUTRA" },
+      now,
+      SOURCE,
+    );
+    expect(r.changed).toBe(false);
+    expect(r.payload.cotaMaxima).toEqual(makeOld().cotaMaxima);
   });
 });
