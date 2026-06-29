@@ -20,6 +20,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/da
   "faixa3": { "cotista": {"N_NE":7.66,"S_SE_CO":8.16}, "naoCotista": {"N_NE":7.66,"S_SE_CO":8.16} },
   "classeMedia": 10,
   "indexers": { "trMonthlyPct": 0.1709, "poupancaMonthlyPct": 0.6734 },
+  "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2026-06-29T00:00:00.000Z" },
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/...",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
@@ -34,6 +35,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/da
 - `faixa2`/`faixa3`: taxa nominal anual (%) por cotista/não-cotista × região (`N_NE`, `S_SE_CO`).
 - `classeMedia`: taxa nominal anual (%).
 - `indexers`: TR e poupança mensais (%) do BCB.
+- `cotaMaxima.sbpe.sac` / `.price`: percentual máximo do valor do imóvel financiável pelo SBPE (SAC e Price), extraído via LLM de fonte oficial. Atualizado quando muda.
 - `meta.retrievedAt`: quando o dado foi raspado. `meta.publishedAt`: data informada pelo gov.br.
 - `meta.rulesStale`: sempre `false` no arquivo; **o cliente recalcula** por idade (ver abaixo).
 
