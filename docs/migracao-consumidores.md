@@ -60,9 +60,12 @@ const subsidioMax = rates.mcmv?.subsidioMaxPorRegiao.N; // 65000 (Norte)
 ```
 
 Ressalvas: `tetoImovel.faixa1e2` é um range nacional (`min`/`max`) — o valor exato por município
-vive na planilha da Caixa (não raspada). `subsidioMaxPorRegiao` é o **teto** do desconto, não o
-valor que cada família recebe (depende de renda/região/valor). Tipar `mcmv?` opcional e ter fallback,
-como a `cotaMaxima`.
+vive na **planilha oficial da Caixa** (não ingerida): `TABELA_MUNICIPIOS_VIGENCIA_*.xlsx` em
+`https://www.caixa.gov.br/Downloads/fgts-tabela-municipios/` (chave `CO_IBGE`; ~5.572 municípios).
+Decidido não raspar por ora (anti-bot exige navegador headless e o dado roda ~1×/ano) — reabrir se
+um consumidor precisar de precisão por município. `subsidioMaxPorRegiao` é o **teto** do desconto,
+não o valor que cada família recebe (depende de renda/região/valor). Tipar `mcmv?` opcional e ter
+fallback, como a `cotaMaxima`.
 
 ## projeto-simuladores
 
