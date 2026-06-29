@@ -1,13 +1,31 @@
 // src/update.ts
 // Núcleo de decisão — lógica PURA, sem I/O (rede ou disco). Testável em isolamento.
 import { createHash } from "node:crypto";
-import type { IndexersRaw, ParsedRates, RatesPayload } from "./types";
+import type { CotaRaw, IndexersRaw, ParsedRates, RatesPayload } from "./types";
 
 export const SOURCE_NAME = "Ministério das Cidades — MCMV Linha Financiada";
 
 /** SHA-256 hex de uma string. */
 export function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex");
+}
+
+/** Cota plausível: SAC/Price em 30–100, price ≤ sac, e fonteUrl em domínio oficial gov.br. */
+export function isCotaPlausible(c: CotaRaw | null): c is CotaRaw {
+  if (!c) return false;
+  const { sac, price, fonteUrl } = c;
+  if (typeof sac !== "number" || typeof price !== "number" || Number.isNaN(sac) || Number.isNaN(price))
+    return false;
+  if (sac < 30 || sac > 100 || price < 30 || price > 100) return false;
+  if (price > sac) return false;
+  if (typeof fonteUrl !== "string") return false;
+  let host: string;
+  try {
+    host = new URL(fonteUrl).hostname;
+  } catch {
+    return false;
+  }
+  return host === "gov.br" || host.endsWith(".gov.br");
 }
 
 /**

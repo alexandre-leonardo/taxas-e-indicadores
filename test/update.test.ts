@@ -1,6 +1,6 @@
 // test/update.test.ts
 import { describe, it, expect } from "vitest";
-import { decideUpdate, sha256 } from "../src/update";
+import { decideUpdate, isCotaPlausible, sha256 } from "../src/update";
 import type { ParsedRates, RatesPayload } from "../src/types";
 
 const SOURCE = "https://www.gov.br/cidades/mcmv-fgts";
@@ -80,5 +80,34 @@ describe("sha256", () => {
     const b = sha256("x");
     expect(a).toBe(b);
     expect(a).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("isCotaPlausible", () => {
+  const ok = { sac: 80, price: 70, fonteUrl: "https://caixanoticias.caixa.gov.br/x" };
+  it("aceita cota válida de fonte oficial", () => {
+    expect(isCotaPlausible(ok)).toBe(true);
+  });
+  it("aceita subdomínio gov.br", () => {
+    expect(isCotaPlausible({ ...ok, fonteUrl: "https://www.gov.br/cidades/x" })).toBe(true);
+  });
+  it("rejeita null", () => {
+    expect(isCotaPlausible(null)).toBe(false);
+  });
+  it("rejeita price > sac", () => {
+    expect(isCotaPlausible({ ...ok, sac: 70, price: 80 })).toBe(false);
+  });
+  it("rejeita fora da faixa 30–100", () => {
+    expect(isCotaPlausible({ ...ok, sac: 120 })).toBe(false);
+    expect(isCotaPlausible({ ...ok, price: 10, sac: 10 })).toBe(false);
+  });
+  it("rejeita domínio não-oficial (blog)", () => {
+    expect(isCotaPlausible({ ...ok, fonteUrl: "https://lokatell.com.br/blog" })).toBe(false);
+  });
+  it("rejeita fonteUrl malformada", () => {
+    expect(isCotaPlausible({ ...ok, fonteUrl: "não é url" })).toBe(false);
+  });
+  it("rejeita valores NaN", () => {
+    expect(isCotaPlausible({ ...ok, sac: NaN })).toBe(false);
   });
 });
