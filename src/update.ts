@@ -183,6 +183,7 @@ export function decideIndices(
   for (const [chave, cfg] of Object.entries(config)) {
     const oldSerie = old.indices?.[chave]?.serie ?? [];
     const serie = mergeSerie(oldSerie, fetched[chave] ?? null, cfg.unidade);
+    if (serie.length === 0) continue; // não persiste série vazia (ex.: série nova cujo 1º fetch falhou)
     indices[chave] = { nome: cfg.nome, sgs: cfg.sgs, unidade: cfg.unidade, serie };
   }
   const contentHash = sha256(JSON.stringify(indices));

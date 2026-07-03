@@ -30,6 +30,7 @@ jobs:
 
       - name: Atualizar painel de índices (BCB SGS)
         run: npm run indices
+        continue-on-error: true # desacopla: falha aqui nunca derruba o commit das taxas
 
       - name: Commit + push + purge jsDelivr (se mudou)
         run: |

@@ -83,4 +83,8 @@ describe("decideIndices", () => {
     const r2 = decideIndices(r1.payload, { ipca: [{ mes: "2026-05", valor: 0.5 }] }, cfg, now, "u", "2001-01");
     expect(r2.changed).toBe(false);
   });
+  it("série cujo fetch falhou e sem histórico → chave omitida (não persiste vazio)", () => {
+    const r = decideIndices(vazio, { ipca: null }, cfg, now, "u", "2001-01");
+    expect(r.payload.indices.ipca).toBeUndefined();
+  });
 });
