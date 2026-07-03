@@ -15,6 +15,12 @@ jsDelivr. Sem banco, sem servidor — o git é o "banco" (cada commit = uma vers
 - Os limites do MCMV (`mcmv`: teto do imóvel por faixa + subsídio máximo por região) saem por parser
   determinístico do MESMO HTML do gov.br (`src/parser.ts:parseMcmvLimits`), sem LLM. Guarda
   `src/update.ts:isMcmvPlausible` preserva o valor anterior se o layout mudar.
+- O painel de índices (`data/indices-historico.json`, via `npm run indices` → `src/indices.ts`) puxa
+  10 séries do BCB SGS (TR, poupança, SELIC, IPCA, IGP-M, INCC, IVG-R, juros habitacional mercado+SFH,
+  CDI) desde 2001, re-puxando o histórico inteiro a cada rodada (idempotente via `contentHash`). Guarda
+  por unidade (`src/update.ts:isPontoPlausivel`) e merge anti-corrupção (`mergeSerie`) preservam dado
+  bom quando o fetch falha. Aditivo — não toca no `RatesPayload`. (Poupança/série 195 é diária: puxada
+  em janelas ≤10a e colapsada a 1 ponto/mês.)
 - A GitHub Action (`.github/workflows/update-rates.yml`) roda toda segunda 08h BRT (e sob demanda
   via `workflow_dispatch`), testa, raspa e commita a mudança; depois faz purge do jsDelivr.
 - Consumidores leem o JSON via CDN e caem num seed embutido se o fetch falhar.
@@ -26,13 +32,18 @@ pelo engaja-amiz. Não alterar o shape sem migrar todos os consumidores.
 
 ## URL pública
 
+Taxas:
 `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json`
+
+Índices (histórico):
+`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/indices-historico.json`
 
 ## Comandos
 
 - `npm install` — instala deps.
-- `npm test` — roda os testes (parser + decisão).
-- `npm run scrape` — roda o scraper localmente (escreve `data/` se mudou).
+- `npm test` — roda os testes (parser + decisão + índices).
+- `npm run scrape` — roda o scraper de taxas localmente (escreve `data/` se mudou).
+- `npm run indices` — puxa/atualiza o painel de índices (escreve `data/indices-historico.json` se mudou).
 
 ## Regras
 

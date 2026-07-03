@@ -61,3 +61,30 @@ export interface McmvLimits {
   tetoImovel: { faixa1e2: { min: number; max: number }; faixa3: number; classeMedia: number };
   subsidioMaxPorRegiao: { N: number; demais: number };
 }
+
+// ── Painel de índices (BCB SGS) — aditivo, arquivo próprio data/indices-historico.json ──
+export type UnidadeIndice = "pct_am" | "pct_aa" | "indice";
+
+export interface PontoSerie {
+  mes: string; // "YYYY-MM"
+  valor: number;
+}
+
+export interface SerieIndice {
+  nome: string;
+  sgs: number;
+  unidade: UnidadeIndice;
+  serie: PontoSerie[]; // ordenada por mês asc
+}
+
+export interface IndicesHistorico {
+  schemaVersion: 1;
+  indices: Record<string, SerieIndice>;
+  meta: {
+    fonte: string;
+    sourceUrl: string;
+    desde: string; // "YYYY-MM"
+    atualizadoEm: string; // ISO 8601
+    contentHash: string; // sha256 do objeto `indices`
+  };
+}

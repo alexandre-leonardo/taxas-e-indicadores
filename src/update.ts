@@ -1,7 +1,17 @@
 // src/update.ts
 // Núcleo de decisão — lógica PURA, sem I/O (rede ou disco). Testável em isolamento.
 import { createHash } from "node:crypto";
-import type { CotaRaw, IndexersRaw, McmvLimits, ParsedRates, RatesPayload } from "./types";
+import type {
+  CotaRaw,
+  IndexersRaw,
+  McmvLimits,
+  ParsedRates,
+  RatesPayload,
+  IndicesHistorico,
+  PontoSerie,
+  SerieIndice,
+  UnidadeIndice,
+} from "./types";
 
 export const SOURCE_NAME = "Ministério das Cidades — MCMV Linha Financiada";
 
@@ -120,4 +130,76 @@ export function decideUpdate(
     },
   };
   return { changed: true, payload };
+}
+
+// ── Painel de índices (BCB SGS) — lógica pura, aditiva ao motor de taxas ──
+
+/** Faixas de plausibilidade por unidade (aberto-aberto). Barra hiperinflação/lixo e número-índice fora de faixa. */
+const PLAUS_INDICE: Record<UnidadeIndice, [number, number]> = {
+  pct_am: [-10, 10], // IGP-M tem meses negativos e picos ~+4%
+  pct_aa: [0, 50], // juros habitacional (~8–14% a.a.)
+  indice: [50, 5000], // IVG-R ≈ 769
+};
+
+export function isPontoPlausivel(valor: number, unidade: UnidadeIndice): boolean {
+  if (typeof valor !== "number" || Number.isNaN(valor)) return false;
+  const [lo, hi] = PLAUS_INDICE[unidade];
+  return valor > lo && valor < hi;
+}
+
+/**
+ * Merge anti-corrupção: base = série anterior; cada ponto buscado PLAUSÍVEL sobrescreve o mês.
+ * Ponto buscado implausível ou fetched null → preserva o valor anterior (rede nunca destrói dado bom).
+ * Retorna ordenada por mês asc.
+ */
+export function mergeSerie(
+  old: PontoSerie[],
+  fetched: PontoSerie[] | null,
+  unidade: UnidadeIndice,
+): PontoSerie[] {
+  const map = new Map<string, number>();
+  for (const p of old) map.set(p.mes, p.valor);
+  if (fetched) {
+    for (const p of fetched) if (isPontoPlausivel(p.valor, unidade)) map.set(p.mes, p.valor);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([mes, valor]) => ({ mes, valor }));
+}
+
+/**
+ * Decide se o histórico mudou. contentHash = sha256(objeto `indices`). Reescreve só se mudou.
+ * `fetched` mapeia chave→pontos (ou null se o fetch daquela série falhou).
+ */
+export function decideIndices(
+  old: IndicesHistorico,
+  fetched: Record<string, PontoSerie[] | null>,
+  config: Record<string, { nome: string; sgs: number; unidade: UnidadeIndice }>,
+  now: Date,
+  sourceUrl: string,
+  desde: string,
+): { changed: boolean; payload: IndicesHistorico } {
+  const indices: Record<string, SerieIndice> = {};
+  for (const [chave, cfg] of Object.entries(config)) {
+    const oldSerie = old.indices?.[chave]?.serie ?? [];
+    const serie = mergeSerie(oldSerie, fetched[chave] ?? null, cfg.unidade);
+    if (serie.length === 0) continue; // não persiste série vazia (ex.: série nova cujo 1º fetch falhou)
+    indices[chave] = { nome: cfg.nome, sgs: cfg.sgs, unidade: cfg.unidade, serie };
+  }
+  const contentHash = sha256(JSON.stringify(indices));
+  if (old.meta?.contentHash === contentHash) return { changed: false, payload: old };
+  return {
+    changed: true,
+    payload: {
+      schemaVersion: 1,
+      indices,
+      meta: {
+        fonte: "BCB SGS (api.bcb.gov.br)",
+        sourceUrl,
+        desde,
+        atualizadoEm: now.toISOString(),
+        contentHash,
+      },
+    },
+  };
 }

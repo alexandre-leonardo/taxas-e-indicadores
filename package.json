@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "scrape": "tsx src/index.ts",
+    "indices": "tsx src/indices.ts",
     "test": "vitest run"
   },
   "devDependencies": {

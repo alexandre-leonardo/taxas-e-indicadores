@@ -1,6 +1,6 @@
 // src/sources.ts
 // I/O de rede isolado. Sem lógica de negócio — só busca e normaliza dados das fontes.
-import type { CotaRaw, IndexersRaw } from "./types";
+import type { CotaRaw, IndexersRaw, PontoSerie } from "./types";
 
 /** Parser puro do conteúdo do LLM (JSON) → CotaRaw. null se inválido/incompleto. */
 export function parseCotaResponse(content: string): CotaRaw | null {
@@ -115,4 +115,58 @@ export async function fetchCotaMaxima(): Promise<CotaRaw | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Normaliza linhas cruas do SGS → pontos mensais. Pura (testável isolada, como parseCotaResponse).
+ * data "DD/MM/AAAA" → mes "YYYY-MM"; valor string com ponto decimal → number (negativos ocorrem).
+ */
+export function normalizeSgsRows(rows: Array<{ data?: string; valor?: string }>): PontoSerie[] {
+  const out: PontoSerie[] = [];
+  for (const r of rows ?? []) {
+    if (!r?.data || r.valor == null) continue;
+    const [dd, mm, yyyy] = r.data.split("/");
+    if (!dd || !mm || !yyyy) continue;
+    const valor = parseFloat(String(r.valor).replace(",", "."));
+    if (Number.isNaN(valor)) continue;
+    out.push({ mes: `${yyyy}-${mm}`, valor });
+  }
+  return out;
+}
+
+/** Busca cru de um intervalo de série SGS. null em erro. Datas "DD/MM/AAAA". */
+async function fetchSgsRange(
+  sgs: number,
+  ini: string,
+  fim: string,
+): Promise<Array<{ data?: string; valor?: string }> | null> {
+  try {
+    const url = `${BCB_BASE}.${sgs}/dados?formato=json&dataInicial=${ini}&dataFinal=${fim}`;
+    const res = await fetch(url, { headers: { "User-Agent": "AmizSim/1.0" } });
+    if (!res.ok) return null;
+    return (await res.json()) as Array<{ data?: string; valor?: string }>;
+  } catch {
+    return null;
+  }
+}
+
+/** Histórico de uma série MENSAL do SGS (um request — mensais não têm cap de janela). null em erro. */
+export async function fetchSerieMensal(sgs: number, ini: string, fim: string): Promise<PontoSerie[] | null> {
+  const rows = await fetchSgsRange(sgs, ini, fim);
+  return rows ? normalizeSgsRows(rows) : null;
+}
+
+/**
+ * Poupança (série 195): diária/aniversário, com cap de 10 anos por request.
+ * ponytail: única série que precisa de janelamento; busca em janelas ≤10a e colapsa para
+ * 1 ponto/mês (o PRIMEIRO registro de cada mês — a série vem em ordem cronológica). Robusto:
+ * não assume que exista registro no dia 01. Retorna null só se TODAS as janelas falharem.
+ */
+export async function fetchPoupancaMensal(janelas: Array<[string, string]>): Promise<PontoSerie[] | null> {
+  const partes = await Promise.all(janelas.map(([i, f]) => fetchSgsRange(195, i, f)));
+  if (partes.every((p) => p == null)) return null;
+  const pontos = normalizeSgsRows(partes.flatMap((p) => p ?? []));
+  const porMes = new Map<string, number>();
+  for (const p of pontos) if (!porMes.has(p.mes)) porMes.set(p.mes, p.valor); // primeiro do mês vence
+  return [...porMes.entries()].map(([mes, valor]) => ({ mes, valor }));
 }
