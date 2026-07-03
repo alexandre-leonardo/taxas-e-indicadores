@@ -28,17 +28,21 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
+      - name: Atualizar painel de índices (BCB SGS)
+        run: npm run indices
+
       - name: Commit + push + purge jsDelivr (se mudou)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/taxas-financiamento.json
+          git add data/taxas-financiamento.json data/indices-historico.json
           if git diff --staged --quiet; then
-            echo "Sem mudanças nas taxas."
+            echo "Sem mudanças (taxas nem índices)."
           else
             PUB=$(jq -r '.meta.publishedAt' data/taxas-financiamento.json)
             RET=$(jq -r '.meta.retrievedAt' data/taxas-financiamento.json)
-            git commit -m "chore(rates): atualiza taxas (publishedAt $PUB / retrievedAt $RET)"
+            git commit -m "chore(data): atualiza taxas/índices (publishedAt $PUB / retrievedAt $RET)"
             git push
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json" || true
+            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/indices-historico.json" || true
           fi

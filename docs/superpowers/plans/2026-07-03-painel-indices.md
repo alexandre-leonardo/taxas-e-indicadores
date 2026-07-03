@@ -394,8 +394,9 @@ const SERIES: Record<string, { nome: string; sgs: number; unidade: UnidadeIndice
   igpm: { nome: "IGP-M", sgs: 189, unidade: "pct_am" },
   incc: { nome: "INCC", sgs: 192, unidade: "pct_am" },
   ivgr: { nome: "IVG-R (preço de imóvel residencial)", sgs: 21340, unidade: "indice" },
-  jurosHabMercado: { nome: "Juros financ. habitacional (mercado)", sgs: 25497, unidade: "pct_aa" },
-  jurosHabSfh: { nome: "Juros financ. habitacional (SFH)", sgs: 20773, unidade: "pct_aa" },
+  // 25497 é % a.m.; 20773 é % a.a. — como o BCB publica (unidades diferentes; a tag `unidade` documenta).
+  jurosHabMercado: { nome: "Juros financ. habitacional (mercado, % a.m.)", sgs: 25497, unidade: "pct_am" },
+  jurosHabSfh: { nome: "Juros financ. habitacional (SFH, % a.a.)", sgs: 20773, unidade: "pct_aa" },
   cdi: { nome: "CDI acumulado no mês", sgs: 4391, unidade: "pct_am" },
 };
 

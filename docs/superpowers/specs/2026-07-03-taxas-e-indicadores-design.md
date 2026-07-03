@@ -35,7 +35,7 @@ IPCA-Habitação (IBGE SIDRA), FipeZap/IGMI-R/CUB (sem API gratuita). Ver §11.
 | `igpm` | IGP-M | 189 | `pct_am` | anos 90 |
 | `incc` | INCC | 192 | `pct_am` | anos 90 |
 | `ivgr` | IVG-R (preço de imóvel residencial) | 21340 | `indice` | mar/2001 (base 100) |
-| `jurosHabMercado` | Juros financ. habitacional (mercado) | 25497 | `pct_aa` | mar/2011 |
+| `jurosHabMercado` | Juros financ. habitacional (mercado) | 25497 | `pct_am` | mar/2011 |
 | `jurosHabSfh` | Juros financ. habitacional (SFH) | 20773 | `pct_aa` | mar/2011 |
 | `cdi` | CDI acumulado no mês | 4391 | `pct_am` | jan/1988 |
 
