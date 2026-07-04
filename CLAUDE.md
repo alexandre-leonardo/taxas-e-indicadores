@@ -1,4 +1,4 @@
-# taxas-financiamento-caixa
+# taxas-e-indicadores
 
 Fonte única de verdade das taxas de financiamento imobiliário (MCMV/SBPE) da Caixa/gov.br.
 Serve um JSON estático versionado, atualizado semanalmente por GitHub Action e distribuído via
@@ -33,10 +33,10 @@ pelo engaja-amiz. Não alterar o shape sem migrar todos os consumidores.
 ## URL pública
 
 Taxas:
-`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json`
+`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
 
 Índices (histórico):
-`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/indices-historico.json`
+`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json`
 
 ## Comandos
 

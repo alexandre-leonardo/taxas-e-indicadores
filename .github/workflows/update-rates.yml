@@ -44,6 +44,6 @@ jobs:
             RET=$(jq -r '.meta.retrievedAt' data/taxas-financiamento.json)
             git commit -m "chore(data): atualiza taxas/índices (publishedAt $PUB / retrievedAt $RET)"
             git push
-            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json" || true
-            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/indices-historico.json" || true
+            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json" || true
+            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json" || true
           fi

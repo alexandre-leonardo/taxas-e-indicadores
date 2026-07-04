@@ -1,9 +1,9 @@
 {
-  "name": "taxas-financiamento-caixa",
+  "name": "taxas-e-indicadores",
   "version": "0.1.0",
   "private": false,
   "type": "module",
-  "description": "Fonte única de verdade das taxas de financiamento imobiliário (MCMV/SBPE) da Caixa/gov.br, servida via JSON estático + jsDelivr.",
+  "description": "Fonte única de verdade das taxas de financiamento imobiliário (MCMV/SBPE) da Caixa/gov.br e índices do mercado imobiliário (BCB SGS), servida via JSON estático + jsDelivr.",
   "license": "MIT",
   "scripts": {
     "scrape": "tsx src/index.ts",

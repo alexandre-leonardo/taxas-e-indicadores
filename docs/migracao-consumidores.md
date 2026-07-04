@@ -4,7 +4,7 @@ Este repositório passa a ser a fonte única das taxas. Os apps abaixo devem mig
 atuais para o JSON público. **Editar esses repos é etapa posterior — este doc só descreve o como.**
 
 URL pública:
-`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json`
+`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
 
 ## cotaMaxima — cota máxima de financiamento (novo)
 
