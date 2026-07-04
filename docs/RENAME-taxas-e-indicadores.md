@@ -20,11 +20,11 @@ URLs novas (pós-rename):
 e pushadas). As duas URLs NOVAS do jsDelivr servem 200 (taxas com cota+mcmv; índices com 10 séries).
 A URL ANTIGA ainda serve 200 (cache do jsDelivr + redirect do GitHub) — mas não confiar a longo prazo.
 
-**FALTA SÓ O PASSO 5** (cutover do `projeto-simuladores`) — ADIADO a pedido do usuário porque o repo
-do simuladores estava mid-feature (branch `feature/salvar-simulacoes`, árvore suja). Sem urgência: o app
-segue recebendo dado vivo pela URL antiga enquanto o cache/redirect durar e, quando isso expirar, cai no
-snapshot embutido (fresco, janela de 60 dias) — zero downtime. Executar o passo 5 quando o simuladores
-estiver num `main` limpo.
+**PASSO 5 EXECUTADO em 2026-07-04** (via `git worktree` isolado do `main` do simuladores, sem tocar na
+WIP da branch `feature/salvar-simulacoes`): `RATES_URL` em `useFinancingRates.ts` + `refresh-rates.mjs`
+(e menções em `CLAUDE.md`/`docs/handoff`) agora apontam para `taxas-e-indicadores`. Commit `e1ff650`
+pushado no `main` do simuladores; o deploy automático (webhook GitHub→Coolify) disparou e o site ao vivo
+já serve a URL nova (confirmado varrendo os chunks JS). **RENAME 100% COMPLETO.**
 
 ## Pré-condição
 
@@ -54,12 +54,12 @@ estiver num `main` limpo.
 - [x] purge `.../taxas-e-indicadores@main/data/indices-historico.json` (HTTP 200).
 - [x] Verificado: taxas 200 (publishedAt 28/06/2026, cota.sac=80, mcmv presente); índices 200 (10 séries, arrays `.serie`).
 
-**5. [GATE] Cutover do consumidor `projeto-simuladores`** — ⏸ ADIADO 2026-07-04 (simuladores em `feature/salvar-simulacoes`, árvore suja). Executar num `main` limpo. Trocar a URL e redeployar:
-- [ ] `src/hooks/useFinancingRates.ts`: `RATES_URL` → URL de taxas nova.
-- [ ] `scripts/refresh-rates.mjs`: `RATES_URL` → URL de taxas nova.
-- [ ] (se o simulador for consumir índices) adicionar a URL de índices onde fizer sentido.
-- [ ] Menções em `CLAUDE.md` e `docs/handoff-2026-06-29.md` → nome novo.
-- [ ] Commit + push → deploy automático (webhook GitHub→Coolify). Confirmar que `simuladores.amiz.imb.br` carrega taxas ao vivo (não o fallback).
+**5. [GATE] Cutover do consumidor `projeto-simuladores`** — ✅ FEITO 2026-07-04 (via `git worktree` isolado; WIP da feature intacta; commit `e1ff650`; deploy Coolify confirmado no ar):
+- [x] `src/hooks/useFinancingRates.ts`: `RATES_URL` → URL de taxas nova.
+- [x] `scripts/refresh-rates.mjs`: `RATES_URL` → URL de taxas nova.
+- [ ] (N/A) o simulador não consome índices ainda — nada a adicionar.
+- [x] Menções em `CLAUDE.md` e `docs/handoff-2026-06-29.md` → nome novo.
+- [x] Commit + push → deploy automático (webhook GitHub→Coolify) disparou; `simuladores.amiz.imb.br` já serve a URL nova (verificado nos chunks JS).
 
 **6. Workspace + memória** (local): ✅ FEITO 2026-07-04
 - [x] `d:\Projetos Claude\CLAUDE.md`: N/A — o motor não consta da tabela "Projetos ativos" (nada a mudar; grep vazio).
