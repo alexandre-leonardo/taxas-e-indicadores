@@ -13,11 +13,18 @@ URLs novas (pós-rename):
 - Taxas: `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
 - Índices: `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json`
 
-## Estado atual (2026-07-03 — LER PRIMEIRO)
+## Estado atual (2026-07-04 — LER PRIMEIRO)
 
-O **painel de índices já está pronto, mergeado em `main` (commit `0d7201b`, push OK) e servido
-pelo jsDelivr** (verificado 200 — 10 séries, 2676 pontos). **Não há código a fazer.** Esta sessão
-executa **só o rename** deste runbook. `gh` está autenticado (conta `alexandre-leonardo`).
+**Passos 1–4 EXECUTADOS em 2026-07-04.** O repo já se chama `alexandre-leonardo/taxas-e-indicadores`
+(rename no GitHub OK; remote local atualizado pelo próprio `gh`; refs internas commitadas em `a1fbd68`
+e pushadas). As duas URLs NOVAS do jsDelivr servem 200 (taxas com cota+mcmv; índices com 10 séries).
+A URL ANTIGA ainda serve 200 (cache do jsDelivr + redirect do GitHub) — mas não confiar a longo prazo.
+
+**FALTA SÓ O PASSO 5** (cutover do `projeto-simuladores`) — ADIADO a pedido do usuário porque o repo
+do simuladores estava mid-feature (branch `feature/salvar-simulacoes`, árvore suja). Sem urgência: o app
+segue recebendo dado vivo pela URL antiga enquanto o cache/redirect durar e, quando isso expirar, cai no
+snapshot embutido (fresco, janela de 60 dias) — zero downtime. Executar o passo 5 quando o simuladores
+estiver num `main` limpo.
 
 ## Pré-condição
 
@@ -28,34 +35,35 @@ executa **só o rename** deste runbook. `gh` está autenticado (conta `alexandre
 
 ## Passos
 
-**1. Refs internas deste repo** (local, reversível) — commitar em `main`:
-- [ ] `package.json`: `name` → `taxas-e-indicadores`; `description` → incluir "e índices do mercado imobiliário".
-- [ ] `CLAUDE.md`: título `# taxas-e-indicadores`; as 2 URLs públicas → `@taxas-e-indicadores`.
-- [ ] `.github/workflows/update-rates.yml`: as 2 URLs de `purge.jsdelivr.net` → `.../gh/alexandre-leonardo/taxas-e-indicadores@main/...`.
-- [ ] (opcional) `docs/superpowers/specs|plans/*`: URLs de exemplo.
+**1. Refs internas deste repo** (local, reversível) — commitar em `main`: ✅ FEITO (`a1fbd68`)
+- [x] `package.json`: `name` → `taxas-e-indicadores`; `description` → incluir "e índices do mercado imobiliário".
+- [x] `CLAUDE.md`: título `# taxas-e-indicadores`; as 2 URLs públicas → `@taxas-e-indicadores`.
+- [x] `.github/workflows/update-rates.yml`: as 2 URLs de `purge.jsdelivr.net` → `.../gh/alexandre-leonardo/taxas-e-indicadores@main/...`.
+- [x] `docs/migracao-consumidores.md`: URL pública canônica → nome novo.
+- [ ] (opcional, NÃO feito) `docs/superpowers/specs|plans/*`: URLs de exemplo (docs históricos datados — deixados como estão).
 
-**2. [GATE] Rename no GitHub:**
-- [ ] `gh repo rename taxas-e-indicadores` (ou Settings → Repository name). O GitHub mantém redirect do nome antigo (não confiar nele a longo prazo).
-- [ ] `git remote set-url origin https://github.com/alexandre-leonardo/taxas-e-indicadores.git`
-- [ ] (opcional) renomear a pasta local `d:\Projetos Claude\taxas-financiamento-caixa` → `taxas-e-indicadores` (fazer FORA de uma sessão ativa — muda o cwd).
+**2. [GATE] Rename no GitHub:** ✅ FEITO 2026-07-04
+- [x] `gh repo rename taxas-e-indicadores --yes`. O GitHub mantém redirect do nome antigo (não confiar nele a longo prazo).
+- [x] `git remote set-url origin ...` — o `gh repo rename` já atualizou o remote automaticamente.
+- [ ] (opcional, PENDENTE) renomear a pasta local `d:\Projetos Claude\taxas-financiamento-caixa` → `taxas-e-indicadores` (fazer FORA de uma sessão ativa — muda o cwd).
 
-**3. Push das refs internas** (passo 1) para `main` do repo já renomeado.
+**3. Push das refs internas** (passo 1) para `main` do repo já renomeado. ✅ FEITO (`f97dec8..a1fbd68`).
 
-**4. jsDelivr** — forçar o CDN a ver o novo caminho:
-- [ ] `curl -sf https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
-- [ ] `curl -sf https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json`
-- [ ] Verificar que ambas as URLs novas servem 200 com JSON válido.
+**4. jsDelivr** — forçar o CDN a ver o novo caminho: ✅ FEITO 2026-07-04
+- [x] purge `.../taxas-e-indicadores@main/data/taxas-financiamento.json` (HTTP 200).
+- [x] purge `.../taxas-e-indicadores@main/data/indices-historico.json` (HTTP 200).
+- [x] Verificado: taxas 200 (publishedAt 28/06/2026, cota.sac=80, mcmv presente); índices 200 (10 séries, arrays `.serie`).
 
-**5. [GATE] Cutover do consumidor `projeto-simuladores`** — trocar a URL e redeployar:
+**5. [GATE] Cutover do consumidor `projeto-simuladores`** — ⏸ ADIADO 2026-07-04 (simuladores em `feature/salvar-simulacoes`, árvore suja). Executar num `main` limpo. Trocar a URL e redeployar:
 - [ ] `src/hooks/useFinancingRates.ts`: `RATES_URL` → URL de taxas nova.
 - [ ] `scripts/refresh-rates.mjs`: `RATES_URL` → URL de taxas nova.
 - [ ] (se o simulador for consumir índices) adicionar a URL de índices onde fizer sentido.
 - [ ] Menções em `CLAUDE.md` e `docs/handoff-2026-06-29.md` → nome novo.
 - [ ] Commit + push → deploy automático (webhook GitHub→Coolify). Confirmar que `simuladores.amiz.imb.br` carrega taxas ao vivo (não o fallback).
 
-**6. Workspace + memória** (local):
-- [ ] `d:\Projetos Claude\CLAUDE.md`: tabela "Projetos ativos" + URLs → nome novo.
-- [ ] `C:\Users\alese\.claude\projects\...\memory\MEMORY.md` + arquivos: substituir o nome antigo.
+**6. Workspace + memória** (local): ✅ FEITO 2026-07-04
+- [x] `d:\Projetos Claude\CLAUDE.md`: N/A — o motor não consta da tabela "Projetos ativos" (nada a mudar; grep vazio).
+- [x] `...\memory\MEMORY.md` + arquivos: nome/URLs atualizados. (A PASTA de memória mantém o nome — é derivada do caminho local, que não foi renomeado.)
 
 ## Rollback
 
