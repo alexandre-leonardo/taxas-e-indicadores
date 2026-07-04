@@ -13,10 +13,18 @@ URLs novas (pós-rename):
 - Taxas: `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
 - Índices: `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json`
 
+## Estado atual (2026-07-03 — LER PRIMEIRO)
+
+O **painel de índices já está pronto, mergeado em `main` (commit `0d7201b`, push OK) e servido
+pelo jsDelivr** (verificado 200 — 10 séries, 2676 pontos). **Não há código a fazer.** Esta sessão
+executa **só o rename** deste runbook. `gh` está autenticado (conta `alexandre-leonardo`).
+
 ## Pré-condição
 
-- [ ] Feature `feature/painel-indices` mergeada em `main` (o painel de índices já vive em `main`).
-- [ ] `gh auth status` OK (ou fazer o rename pela UI do GitHub).
+- [x] Feature do painel mergeada em `main` e no ar. ✔
+- [x] `gh auth status` OK (conta `alexandre-leonardo`). ✔
+- [ ] OK explícito do usuário para o cutover do `projeto-simuladores` (o rename toca+redeploya um app
+  live; o usuário condicionou "renomear se não interferir" — e interfere só nesse projeto). Confirmar antes.
 
 ## Passos
 
