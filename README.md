@@ -1,4 +1,4 @@
-# taxas-financiamento-caixa
+# taxas-e-indicadores
 
 Fonte pública e única de verdade das **taxas de financiamento imobiliário** (MCMV/SBPE) da
 Caixa/gov.br, em JSON estático, atualizada semanalmente e servida via CDN. Custo zero.
@@ -6,7 +6,7 @@ Caixa/gov.br, em JSON estático, atualizada semanalmente e servida via CDN. Cust
 ## URL pública
 
 ```
-https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json
+https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json
 ```
 
 > O `@main` tem cache de borda de até ~12h no jsDelivr (a Action faz purge a cada atualização).
@@ -47,7 +47,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/da
 import type { RatesPayload } from "./types"; // copie o shape de src/types.ts
 
 const RATES_URL =
-  "https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-financiamento-caixa@main/data/taxas-financiamento.json";
+  "https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json";
 const MAX_AGE_DAYS = 21;
 
 // `seed` é um RatesPayload embutido no app (fallback offline).

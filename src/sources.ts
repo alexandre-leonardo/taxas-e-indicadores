@@ -80,8 +80,8 @@ export async function fetchCotaMaxima(): Promise<CotaRaw | null> {
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/alexandre-leonardo/taxas-financiamento-caixa",
-        "X-Title": "taxas-financiamento-caixa",
+        "HTTP-Referer": "https://github.com/alexandre-leonardo/taxas-e-indicadores",
+        "X-Title": "taxas-e-indicadores",
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
