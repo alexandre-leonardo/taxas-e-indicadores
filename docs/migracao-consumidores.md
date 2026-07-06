@@ -3,7 +3,19 @@
 Este repositório passa a ser a fonte única das taxas. Os apps abaixo devem migrar de suas fontes
 atuais para o JSON público. **Editar esses repos é etapa posterior — este doc só descreve o como.**
 
-URL pública:
+## Os dois arquivos (leia antes de procurar um dado)
+
+O motor publica **dois JSONs independentes**. Procurar o dado no arquivo errado é o engano nº 1
+(ex.: buscar o INCC no de taxas — ele mora no de índices). Mapa:
+
+| Arquivo | URL pública (jsDelivr `@main`) | O que tem |
+|---|---|---|
+| **taxas** | `.../data/taxas-financiamento.json` | taxas de financiamento MCMV/SBPE, TR, poupança, `cotaMaxima`, `mcmv` — tipo `RatesPayload` |
+| **índices** | `.../data/indices-historico.json` | histórico mensal de 10 séries do BCB SGS desde 2001 (TR, poupança, SELIC, IPCA, IGP-M, **INCC**, IVG-R, juros habitacional, CDI) |
+
+Base das URLs: `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main`
+
+URL pública (taxas):
 `https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json`
 
 ## cotaMaxima — cota máxima de financiamento (novo)
@@ -66,6 +78,63 @@ Decidido não raspar por ora (anti-bot exige navegador headless e o dado roda ~1
 um consumidor precisar de precisão por município. `subsidioMaxPorRegiao` é o **teto** do desconto,
 não o valor que cada família recebe (depende de renda/região/valor). Tipar `mcmv?` opcional e ter
 fallback, como a `cotaMaxima`.
+
+## indices-historico.json — painel de índices (10 séries BCB)
+
+Arquivo **separado** do de taxas, aditivo e independente do `RatesPayload`. URL:
+`https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json`
+
+Shape (`schemaVersion: 1`):
+
+```ts
+interface PontoSerie { mes: string; valor: number }          // mes = "YYYY-MM"
+interface Indice { nome: string; sgs: number; unidade: string; serie: PontoSerie[] }
+interface IndicesPayload {
+  schemaVersion: number;
+  indices: Record<string, Indice>;   // OBJETO com chave = slug (NÃO é array)
+  meta: { fonte: string; sourceUrl: string; desde: string; atualizadoEm: string; contentHash: string };
+}
+```
+
+Séries disponíveis (a chave é o slug; a série está em `.serie`):
+
+| slug | nome | unidade | SGS |
+|---|---|---|---|
+| `tr` | Taxa Referencial | `pct_am` | 7811 |
+| `poupanca` | Poupança (regra nova) | `pct_am` | 195 |
+| `selic` | Selic acumulada no mês | `pct_am` | 4390 |
+| `ipca` | IPCA | `pct_am` | 433 |
+| `igpm` | IGP-M | `pct_am` | 189 |
+| `incc` | INCC | `pct_am` | 192 |
+| `ivgr` | IVG-R (preço de imóvel residencial) | `indice` | 21340 |
+| `jurosHabMercado` | Juros financ. habitacional (mercado) | `pct_am` | 25497 |
+| `jurosHabSfh` | Juros financ. habitacional (SFH) | `pct_aa` | 20773 |
+| `cdi` | CDI acumulado no mês | `pct_am` | 4391 |
+
+**Unidades — não confunda:** `pct_am` = % ao mês · `pct_aa` = % ao ano (só `jurosHabSfh`) ·
+`indice` = número-índice (nível, ex. IVG-R ~769), **não** percentual. Ler `unidade` antes de formatar.
+
+Consumo:
+
+```ts
+const res  = await fetch(INDICES_URL, { cache: "no-store" });
+const data = await res.json() as IndicesPayload;
+const incc = data.indices.incc.serie;   // [{ mes:"2001-01", valor:0.58 }, … ]
+const ultimo = incc.at(-1);             // ponto mais recente
+```
+
+Cuidados:
+- **Chave é slug num objeto, campo dos pontos é `serie`** — não é array de topo, não é `pontos`.
+  Iterar séries: `Object.entries(data.indices)`.
+- **Defasagem de publicação é normal.** O BCB divulga IPCA/INCC/IGP-M com ~1–2 meses de atraso; TR,
+  SELIC, poupança e CDI chegam no mês corrente. Logo o último `mes` varia por série. **Não** meça
+  "desatualizado" exigindo o mês atual — meça pela idade do `fetch` (ou por `meta.atualizadoEm`),
+  igual ao `withStaleness` das taxas.
+- **Aditivo:** este arquivo nunca altera o `taxas-financiamento.json`. Consumir um não obriga a
+  consumir o outro.
+- **Fallback opcional:** se o índice for só exibição (gráfico/tabela), um fetch que falha pode
+  render vazio — não precisa de snapshot embutido. Só commite um snapshot se o índice virar input de
+  cálculo (ex.: correção de parcela por INCC).
 
 ## projeto-simuladores
 
