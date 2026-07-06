@@ -21,7 +21,7 @@
   },
   "classeMedia": 10,
   "indexers": {
-    "trMonthlyPct": 0.1709,
+    "trMonthlyPct": 0.1729,
     "poupancaMonthlyPct": 0.6704
   },
   "cotaMaxima": {
@@ -49,7 +49,7 @@
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-06-29T14:50:31.760Z",
+    "retrievedAt": "2026-07-06T14:31:51.301Z",
     "publishedAt": "28/06/2026",
     "contentHash": "8a6a8889f8222fb0737dee4498306017692237d390eb622ad7fe9bd9436c4f7c",
     "rulesStale": false
