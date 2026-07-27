@@ -3158,7 +3158,7 @@
         },
         {
           "mes": "2026-07",
-          "valor": 0.69
+          "valor": 0.95
         }
       ]
     },
@@ -10779,7 +10779,7 @@
         },
         {
           "mes": "2026-07",
-          "valor": 0.69
+          "valor": 0.95
         }
       ]
     }
@@ -10788,7 +10788,7 @@
     "fonte": "BCB SGS (api.bcb.gov.br)",
     "sourceUrl": "https://api.bcb.gov.br/dados/serie/bcdata.sgs",
     "desde": "2001-01",
-    "atualizadoEm": "2026-07-20T13:11:27.938Z",
-    "contentHash": "cbaf494ead6e37e8707a3ce6e4d8ea980fcc4236305d3e77b41d9549222128bd"
+    "atualizadoEm": "2026-07-27T13:42:10.384Z",
+    "contentHash": "c74bf8dfa8f2ecc26330ea2da7a9131850776b1186125fbd09696bc9c0052d03"
   }
 }
