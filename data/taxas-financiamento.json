@@ -22,15 +22,15 @@
   "classeMedia": 10,
   "indexers": {
     "trMonthlyPct": 0.1729,
-    "poupancaMonthlyPct": 0.6703
+    "poupancaMonthlyPct": 0.6739
   },
   "cotaMaxima": {
     "sbpe": {
-      "sac": 80,
-      "price": 70
+      "sac": 70,
+      "price": 50
     },
-    "fonteUrl": "https://caixanoticias.caixa.gov.br/Paginas/Not%C3%ADcias/2025/10-OUTUBRO/CAIXA-e-Governo-Federal-fortalecem-politica-habitacional-com-novas-medidas-para-o-credito-imobiliario.aspx",
-    "atualizadoEm": "2026-06-29T00:00:00.000Z"
+    "fonteUrl": "http://www.caixa.gov.br/voce/habitacao/perguntas-frequentes-novos-financiamentos/Paginas/default.aspx",
+    "atualizadoEm": "2026-08-03T13:44:55.970Z"
   },
   "mcmv": {
     "tetoImovel": {
@@ -49,7 +49,7 @@
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-07-27T13:42:10.051Z",
+    "retrievedAt": "2026-08-03T13:44:55.970Z",
     "publishedAt": "28/06/2026",
     "contentHash": "8a6a8889f8222fb0737dee4498306017692237d390eb622ad7fe9bd9436c4f7c",
     "rulesStale": false
