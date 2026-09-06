@@ -1,0 +1,157 @@
+{
+  ".claude/settings.json": {
+    "mtime": 1782594914.082695,
+    "ast_hash": "c6ef3e21dd9d7bf39ec757c4d9700608",
+    "semantic_hash": "c6ef3e21dd9d7bf39ec757c4d9700608"
+  },
+  "data/indices-historico.json": {
+    "mtime": 1783113312.4319904,
+    "ast_hash": "fa622da8d6702af96d009776392ccc53",
+    "semantic_hash": "fa622da8d6702af96d009776392ccc53"
+  },
+  "data/taxas-financiamento.json": {
+    "mtime": 1782758603.7730286,
+    "ast_hash": "d24106e7a9056df15b767bf7be379504",
+    "semantic_hash": "d24106e7a9056df15b767bf7be379504"
+  },
+  "package.json": {
+    "mtime": 1783113312.437173,
+    "ast_hash": "82962167f8577ecfbc3adb049fb87945",
+    "semantic_hash": "82962167f8577ecfbc3adb049fb87945"
+  },
+  "src/index.ts": {
+    "mtime": 1782758603.7770336,
+    "ast_hash": "016848d3b68e247d29f54e2922af10c9",
+    "semantic_hash": "016848d3b68e247d29f54e2922af10c9"
+  },
+  "src/indices.ts": {
+    "mtime": 1783113312.4381735,
+    "ast_hash": "690b09bfc5d2b1196d0ce7f0f02187c5",
+    "semantic_hash": "690b09bfc5d2b1196d0ce7f0f02187c5"
+  },
+  "src/parser.ts": {
+    "mtime": 1782758603.7780387,
+    "ast_hash": "711835085974b89d3753ed8a6b86204e",
+    "semantic_hash": "711835085974b89d3753ed8a6b86204e"
+  },
+  "src/sources.ts": {
+    "mtime": 1783113312.4401753,
+    "ast_hash": "64937a54bf2a2c27a4759d0da76f80cd",
+    "semantic_hash": "64937a54bf2a2c27a4759d0da76f80cd"
+  },
+  "src/types.ts": {
+    "mtime": 1783113312.4411767,
+    "ast_hash": "2a2dbeeec55d889c116de5bb2a440604",
+    "semantic_hash": "2a2dbeeec55d889c116de5bb2a440604"
+  },
+  "src/update.ts": {
+    "mtime": 1783113312.4431756,
+    "ast_hash": "6efdd0b8c13948eb80c50802403a05cd",
+    "semantic_hash": "6efdd0b8c13948eb80c50802403a05cd"
+  },
+  "test/indices.test.ts": {
+    "mtime": 1783113312.4441743,
+    "ast_hash": "b4bdc9c5e84fb095ef384986b582f05d",
+    "semantic_hash": "b4bdc9c5e84fb095ef384986b582f05d"
+  },
+  "test/parser.test.ts": {
+    "mtime": 1782758603.7820392,
+    "ast_hash": "3727f766f527c0ff2aaae2546e5f5b4a",
+    "semantic_hash": "3727f766f527c0ff2aaae2546e5f5b4a"
+  },
+  "test/sources.test.ts": {
+    "mtime": 1782756214.7585063,
+    "ast_hash": "02d47478329e40639deba00d58138ab8",
+    "semantic_hash": "02d47478329e40639deba00d58138ab8"
+  },
+  "test/update.test.ts": {
+    "mtime": 1782758603.7840376,
+    "ast_hash": "4bce66311fabe84933ea45d043c380a6",
+    "semantic_hash": "4bce66311fabe84933ea45d043c380a6"
+  },
+  "tsconfig.json": {
+    "mtime": 1782594206.4516425,
+    "ast_hash": "23086867ed8f6f783003fc7780cb8bac",
+    "semantic_hash": "23086867ed8f6f783003fc7780cb8bac"
+  },
+  ".github/workflows/update-rates.yml": {
+    "mtime": 1783113312.4269843,
+    "ast_hash": "a428701b783d93eaca56f51d87d73786",
+    "semantic_hash": "a428701b783d93eaca56f51d87d73786"
+  },
+  "CLAUDE.md": {
+    "mtime": 1783113312.4299915,
+    "ast_hash": "8f5bdd3aaba539c64015a230955cd452",
+    "semantic_hash": "8f5bdd3aaba539c64015a230955cd452"
+  },
+  "README.md": {
+    "mtime": 1782758603.7710328,
+    "ast_hash": "406eef514decb2fb2d038f08297b5fb9",
+    "semantic_hash": "406eef514decb2fb2d038f08297b5fb9"
+  },
+  "docs/RENAME-taxas-e-indicadores.md": {
+    "mtime": 1783113312.4334989,
+    "ast_hash": "a3dae826f3c56667dbcfb1633fac3cbb",
+    "semantic_hash": "a3dae826f3c56667dbcfb1633fac3cbb"
+  },
+  "docs/fontes-avaliadas.md": {
+    "mtime": 1782772057.8325915,
+    "ast_hash": "62c7e6f69c4b8750836d927faf06aa00",
+    "semantic_hash": "62c7e6f69c4b8750836d927faf06aa00"
+  },
+  "docs/migracao-consumidores.md": {
+    "mtime": 1782769362.8402267,
+    "ast_hash": "b8eb8c2b98b109515261b5b406c85233",
+    "semantic_hash": "b8eb8c2b98b109515261b5b406c85233"
+  },
+  "docs/superpowers/HANDOFF-2026-06-27.md": {
+    "mtime": 1782596800.8591993,
+    "ast_hash": "9d92493c2bc138f505a9ee582153de0a",
+    "semantic_hash": "9d92493c2bc138f505a9ee582153de0a"
+  },
+  "docs/superpowers/plans/2026-06-27-taxas-financiamento-caixa.md": {
+    "mtime": 1782594034.3867745,
+    "ast_hash": "44bceeb658fa1e8ce8ba9e6430553337",
+    "semantic_hash": "44bceeb658fa1e8ce8ba9e6430553337"
+  },
+  "docs/superpowers/plans/2026-06-29-cota-maxima-financiamento.md": {
+    "mtime": 1782756214.7525241,
+    "ast_hash": "4bc1ebbbdf44bfcfbd788b250196bca9",
+    "semantic_hash": "4bc1ebbbdf44bfcfbd788b250196bca9"
+  },
+  "docs/superpowers/plans/2026-06-29-mcmv-teto-subsidio.md": {
+    "mtime": 1782758603.7750325,
+    "ast_hash": "afa358246ad15eba59b5649d972d6a56",
+    "semantic_hash": "afa358246ad15eba59b5649d972d6a56"
+  },
+  "docs/superpowers/plans/2026-07-03-painel-indices.md": {
+    "mtime": 1783113312.4340062,
+    "ast_hash": "e2e7b56930ebfe6a71ba3fe0b97efed1",
+    "semantic_hash": "e2e7b56930ebfe6a71ba3fe0b97efed1"
+  },
+  "docs/superpowers/specs/2026-06-27-taxas-financiamento-caixa-design.md": {
+    "mtime": 1782593691.184239,
+    "ast_hash": "c1853b9311f6b5cd956858e45ce328e7",
+    "semantic_hash": "c1853b9311f6b5cd956858e45ce328e7"
+  },
+  "docs/superpowers/specs/2026-06-29-cota-maxima-financiamento-design.md": {
+    "mtime": 1782756214.7535093,
+    "ast_hash": "3dfe5211f66b83678a17d4e71e9a56ce",
+    "semantic_hash": "3dfe5211f66b83678a17d4e71e9a56ce"
+  },
+  "docs/superpowers/specs/2026-06-29-mcmv-teto-subsidio-design.md": {
+    "mtime": 1782758603.7760358,
+    "ast_hash": "e10dd3bf5efd68241ec719c730cd4e09",
+    "semantic_hash": "e10dd3bf5efd68241ec719c730cd4e09"
+  },
+  "docs/superpowers/specs/2026-07-03-taxas-e-indicadores-design.md": {
+    "mtime": 1783113312.435658,
+    "ast_hash": "dccbb09bc8a81547e8834139cdf8fa58",
+    "semantic_hash": "dccbb09bc8a81547e8834139cdf8fa58"
+  },
+  "test/fixtures/mcmv-govbr.html": {
+    "mtime": 1782594336.9097147,
+    "ast_hash": "f279190d9a409d366e36bcfb218fd733",
+    "semantic_hash": "f279190d9a409d366e36bcfb218fd733"
+  }
+}
