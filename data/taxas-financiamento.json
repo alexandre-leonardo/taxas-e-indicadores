@@ -74,6 +74,17 @@
         "semRelacionamento": 11.49,
         "comRelacionamento": 11.19
       },
+      "semRelacionamentoPorRenda": [
+        {
+          "rendaAte": 77500,
+          "efetivaAnualPct": 11.49
+        },
+        {
+          "rendaAte": null,
+          "efetivaAnualPct": 13.4
+        }
+      ],
+      "fontePorRendaUrl": "https://simuladorhabitacao.caixa.gov.br/calculadora",
       "indexador": "TR"
     },
     "fonteUrl": "https://larya.com.br/blog/taxas-de-juros-financiamento-imobiliario-2026/",
@@ -96,7 +107,7 @@
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-10-03T20:36:00.787Z",
+    "retrievedAt": "2026-10-03T20:59:16.972Z",
     "publishedAt": "28/06/2026",
     "contentHash": "4aa4309f1229e2d07e6f52ccd418ff8da6559d7e87ac159d24770947ebae6c7f",
     "rulesStale": false
