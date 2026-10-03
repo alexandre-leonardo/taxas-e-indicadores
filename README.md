@@ -20,7 +20,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/tax
   "faixa3": { "cotista": {"N_NE":7.66,"S_SE_CO":8.16}, "naoCotista": {"N_NE":7.66,"S_SE_CO":8.16} },
   "classeMedia": 10,
   "indexers": { "trMonthlyPct": 0.1709, "poupancaMonthlyPct": 0.6734 },
-  "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2026-06-29T00:00:00.000Z" },
+  "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2025-10-13T00:00:00.000Z" },
   "mcmv": { "tetoImovel": { "faixa1e2": { "min": 210000, "max": 275000 }, "faixa3": 400000, "classeMedia": 600000 }, "subsidioMaxPorRegiao": { "N": 65000, "demais": 55000 } },
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/...",
@@ -36,7 +36,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/tax
 - `faixa2`/`faixa3`: taxa nominal anual (%) por cotista/não-cotista × região (`N_NE`, `S_SE_CO`).
 - `classeMedia`: taxa nominal anual (%).
 - `indexers`: TR e poupança mensais (%) do BCB.
-- `cotaMaxima.sbpe.sac` / `.price`: percentual máximo do valor do imóvel financiável pelo SBPE (SAC e Price), extraído via LLM de fonte oficial. Atualizado quando muda.
+- `cotaMaxima.sbpe.sac` / `.price`: percentual máximo do valor do imóvel financiável pelo SBPE (SAC e Price), revisado manualmente a partir de fonte oficial; `atualizadoEm` é o início da vigência. Um vigia (LLM) abre issue no repo quando acha notícia de mudança.
 - `mcmv.tetoImovel`: teto do valor do imóvel por faixa MCMV em reais (`faixa1e2` é range por município — `min`/`max` nacionais; `faixa3` e `classeMedia` são valores únicos). `mcmv.subsidioMaxPorRegiao`: teto do subsídio (desconto) por região (`N` = Norte, `demais` = demais regiões) — é o máximo possível, não o valor que cada família recebe.
 - `meta.retrievedAt`: quando o dado foi raspado. `meta.publishedAt`: data informada pelo gov.br.
 - `meta.rulesStale`: sempre `false` no arquivo; **o cliente recalcula** por idade (ver abaixo).

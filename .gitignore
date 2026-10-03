@@ -2,3 +2,4 @@ node_modules/
 *.log
 .env
 dist/
+alerta-cota.md

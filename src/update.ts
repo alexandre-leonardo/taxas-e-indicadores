@@ -2,7 +2,7 @@
 // Núcleo de decisão — lógica PURA, sem I/O (rede ou disco). Testável em isolamento.
 import { createHash } from "node:crypto";
 import type {
-  CotaRaw,
+  CotaMaxima,
   IndexersRaw,
   McmvLimits,
   ParsedRates,
@@ -20,23 +20,19 @@ export function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex");
 }
 
-/** Cota plausível: SAC/Price em 30–100, price ≤ sac, e fonteUrl em domínio oficial gov.br. */
-export function isCotaPlausible(c: CotaRaw | null): c is CotaRaw {
-  if (!c) return false;
-  const { sac, price, fonteUrl } = c;
-  if (typeof sac !== "number" || typeof price !== "number" || Number.isNaN(sac) || Number.isNaN(price))
-    return false;
-  if (sac < 30 || sac > 100 || price < 30 || price > 100) return false;
-  if (price > sac) return false;
-  if (typeof fonteUrl !== "string") return false;
-  let host: string;
-  try {
-    host = new URL(fonteUrl).hostname;
-  } catch {
-    return false;
-  }
-  return host === "gov.br" || host.endsWith(".gov.br");
-}
+/**
+ * Cota máxima SBPE vigente — revisada por HUMANO, não por LLM (o LLM inventava 70/50).
+ * Mudou a cota? Edite aqui (atualizadoEm = início da vigência), push e rode a Action:
+ * o scrape publica e faz purge do jsDelivr. O vigia (sources.ts:vigiarCota) abre issue quando
+ * acha notícia de mudança posterior a atualizadoEm.
+ * Histórico: 80/70 → 70/50 em 01/11/2024 → 80/70 de volta em 13/10/2025.
+ */
+export const COTA_VIGENTE: CotaMaxima = {
+  sbpe: { sac: 80, price: 70 },
+  fonteUrl:
+    "https://caixanoticias.caixa.gov.br/Paginas/Not%C3%ADcias/2025/10-OUTUBRO/CAIXA-e-Governo-Federal-fortalecem-politica-habitacional-com-novas-medidas-para-o-credito-imobiliario.aspx",
+  atualizadoEm: "2025-10-13T00:00:00.000Z",
+};
 
 /** Limites MCMV plausíveis: tetos em 50k–5M (max≥min), subsídios em 1k–500k. */
 export function isMcmvPlausible(m: McmvLimits | null): m is McmvLimits {
@@ -65,7 +61,6 @@ export function decideUpdate(
   old: RatesPayload,
   parsed: ParsedRates,
   raw: IndexersRaw,
-  cotaRaw: CotaRaw | null,
   mcmvRaw: McmvLimits | null,
   now: Date,
   sourceUrl: string,
@@ -79,24 +74,12 @@ export function decideUpdate(
       ? raw.poupRaw
       : old.indexers.poupancaMonthlyPct;
 
-  // Cota: só publica se plausível E o número (sac/price) mudou. fonteUrl varia entre runs
-  // com o mesmo valor — comparar fonteUrl geraria commit semanal espúrio.
-  let cotaMaxima = old.cotaMaxima;
-  let cotaChanged = false;
-  if (
-    isCotaPlausible(cotaRaw) &&
-    (cotaRaw.sac !== old.cotaMaxima?.sbpe?.sac || cotaRaw.price !== old.cotaMaxima?.sbpe?.price)
-  ) {
-    cotaChanged = true;
-    cotaMaxima = {
-      sbpe: { sac: cotaRaw.sac, price: cotaRaw.price },
-      fonteUrl: cotaRaw.fonteUrl,
-      atualizadoEm: now.toISOString(),
-    };
-  }
+  // Cota: constante revisada por humano. Mudou a constante → publica na próxima rodada.
+  const cotaMaxima = COTA_VIGENTE;
+  const cotaChanged = JSON.stringify(old.cotaMaxima) !== JSON.stringify(COTA_VIGENTE);
 
   // MCMV: parse determinístico do gov.br. Estável (sem churn); preserva old se implausível.
-  // ponytail: 7 params posicionais — se entrar um 4º source, agrupar num objeto `sources`.
+  // ponytail: 6 params posicionais — se entrar um 4º source, agrupar num objeto `sources`.
   let mcmv = old.mcmv;
   let mcmvChanged = false;
   if (isMcmvPlausible(mcmvRaw) && JSON.stringify(mcmvRaw) !== JSON.stringify(old.mcmv)) {

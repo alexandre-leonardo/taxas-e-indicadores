@@ -1,15 +1,28 @@
 // src/sources.ts
 // I/O de rede isolado. Sem lógica de negócio — só busca e normaliza dados das fontes.
 import { appendFileSync } from "node:fs";
-import type { CotaRaw, IndexersRaw, PontoSerie } from "./types";
+import type { AlertaCota, CotaMaxima, IndexersRaw, PontoSerie } from "./types";
 
-/** Parser puro do conteúdo do LLM (JSON) → CotaRaw. null se inválido/incompleto. */
-export function parseCotaResponse(content: string): CotaRaw | null {
+/**
+ * Parser puro da resposta do vigia (JSON do LLM) → AlertaCota, ou null se não for um alerta crível.
+ * Crível = mudou:true, URL http(s), notícia publicada DEPOIS da vigência atual, percentuais novos
+ * (≠ atuais, 0–100) e trecho que contém os dois números. Alucinação aqui custa só um alarme falso
+ * (vira issue para revisão humana) — nunca publica número.
+ */
+export function avaliarAlertaCota(content: string, atual: CotaMaxima): AlertaCota | null {
   try {
     const o = JSON.parse(content) as Record<string, unknown>;
-    if (typeof o.sac !== "number" || typeof o.price !== "number" || typeof o.fonteUrl !== "string")
-      return null;
-    return { sac: o.sac, price: o.price, fonteUrl: o.fonteUrl };
+    if (o.mudou !== true) return null;
+    const { sac, price, url, trecho, dataPublicacao } = o;
+    if (typeof sac !== "number" || typeof price !== "number") return null;
+    if (typeof url !== "string" || typeof trecho !== "string" || typeof dataPublicacao !== "string") return null;
+    if (!/^https?:\/\//.test(url)) return null;
+    if (!(sac > 0 && sac <= 100 && price > 0 && price <= 100)) return null;
+    if (sac === atual.sbpe.sac && price === atual.sbpe.price) return null;
+    const pub = Date.parse(dataPublicacao);
+    if (Number.isNaN(pub) || pub <= Date.parse(atual.atualizadoEm)) return null;
+    if (!trecho.includes(String(sac)) || !trecho.includes(String(price))) return null;
+    return { sac, price, url, trecho, dataPublicacao };
   } catch {
     return null;
   }
@@ -34,16 +47,22 @@ const BCB_BASE = process.env.BCB_BASE ?? "https://api.bcb.gov.br/dados/serie/bcd
 const OPENROUTER_BASE = process.env.OPENROUTER_BASE ?? "https://openrouter.ai/api/v1";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
 
-const COTA_PROMPT =
-  "Você é um verificador de dados oficiais. Descubra a cota máxima de financiamento imobiliário " +
-  "SBPE da Caixa Econômica Federal ATUALMENTE VIGENTE, para os sistemas SAC e Price (Tabela Price) " +
-  "— o percentual máximo do valor do imóvel que pode ser financiado.\n" +
-  "REGRAS:\n" +
-  "- Confirme o valor em FONTE OFICIAL: domínio caixa.gov.br (inclui caixanoticias.caixa.gov.br) " +
-  "ou gov.br. NÃO aceite blogs, imobiliárias ou portais comerciais como fonte.\n" +
-  "- fonteUrl DEVE ser a URL oficial onde o número aparece. Se não conseguir confirmar em fonte " +
-  "oficial, retorne sac/price com os valores mais prováveis e fonteUrl como string vazia.\n" +
-  "Busque na web quantas vezes precisar para achar a fonte oficial.";
+// O LLM NÃO informa a cota (inventava 70/50 citando um FAQ que só diz "até 90%"). Ele só vigia:
+// procura notícia de mudança posterior à vigência atual; achou → issue para revisão humana.
+function vigiaPrompt(atual: CotaMaxima): string {
+  const desde = new Date(atual.atualizadoEm).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  return (
+    "Você é um vigia de mudanças regulatórias. A cota máxima de financiamento imobiliário SBPE da " +
+    `Caixa Econômica Federal vigente é SAC ${atual.sbpe.sac}% / Price ${atual.sbpe.price}% desde ${desde}.\n` +
+    `Busque na web notícias PUBLICADAS DEPOIS de ${desde} que anunciem ALTERAÇÃO desses percentuais ` +
+    "(Caixa, gov.br ou imprensa de grande circulação).\n" +
+    "REGRAS:\n" +
+    "- Responda mudou=true SOMENTE se encontrou a notícia nesta busca. Nunca responda de memória.\n" +
+    "- url = endereço da notícia; dataPublicacao = data da notícia (AAAA-MM-DD); trecho = frase " +
+    "LITERAL da notícia contendo os novos percentuais; sac/price = os novos percentuais.\n" +
+    "- Se não encontrar mudança, responda mudou=false, sac=0, price=0 e os textos vazios."
+  );
+}
 
 /** Baixa o HTML da página MCMV do gov.br. Lança em status não-2xx. */
 export async function fetchGovBrHtml(): Promise<string> {
@@ -79,10 +98,10 @@ export async function fetchIndexers(): Promise<IndexersRaw> {
 }
 
 /**
- * Extrai a cota máxima SBPE (SAC/Price) via OpenRouter com web search.
- * Nunca lança: sem OPENROUTER_API_KEY, erro de rede, status não-2xx ou parse inválido → null.
+ * Vigia da cota SBPE via OpenRouter com web search. Retorna um alerta crível ou null.
+ * Nunca lança: sem OPENROUTER_API_KEY, erro de rede, status não-2xx ou resposta não crível → null.
  */
-export async function fetchCotaMaxima(): Promise<CotaRaw | null> {
+export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) return null;
   try {
@@ -97,20 +116,23 @@ export async function fetchCotaMaxima(): Promise<CotaRaw | null> {
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
         plugins: [{ id: "web", max_results: 10 }],
-        messages: [{ role: "user", content: COTA_PROMPT }],
+        messages: [{ role: "user", content: vigiaPrompt(atual) }],
         response_format: {
           type: "json_schema",
           json_schema: {
-            name: "cota_maxima",
+            name: "vigia_cota",
             strict: true,
             schema: {
               type: "object",
               properties: {
+                mudou: { type: "boolean" },
                 sac: { type: "number" },
                 price: { type: "number" },
-                fonteUrl: { type: "string" },
+                dataPublicacao: { type: "string" },
+                url: { type: "string" },
+                trecho: { type: "string" },
               },
-              required: ["sac", "price", "fonteUrl"],
+              required: ["mudou", "sac", "price", "dataPublicacao", "url", "trecho"],
               additionalProperties: false,
             },
           },
@@ -122,14 +144,14 @@ export async function fetchCotaMaxima(): Promise<CotaRaw | null> {
     if (!res.ok) return null;
     const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = j?.choices?.[0]?.message?.content;
-    return content ? parseCotaResponse(content) : null;
+    return content ? avaliarAlertaCota(content, atual) : null;
   } catch {
     return null;
   }
 }
 
 /**
- * Normaliza linhas cruas do SGS → pontos mensais. Pura (testável isolada, como parseCotaResponse).
+ * Normaliza linhas cruas do SGS → pontos mensais. Pura (testável isolada, como avaliarAlertaCota).
  * data "DD/MM/AAAA" → mes "YYYY-MM"; valor string com ponto decimal → number (negativos ocorrem).
  */
 export function normalizeSgsRows(rows: Array<{ data?: string; valor?: string }>): PontoSerie[] {

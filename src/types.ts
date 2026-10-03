@@ -45,14 +45,16 @@ export interface IndexersRaw {
 export interface CotaMaxima {
   sbpe: { sac: number; price: number };
   fonteUrl: string;
-  atualizadoEm: string; // ISO 8601 — quando o pipeline gravou este valor
+  atualizadoEm: string; // ISO 8601 — início da vigência (valor revisado por humano em update.ts:COTA_VIGENTE)
 }
 
-// Saída crua da extração de cota via LLM (null se a chamada/parse falhou).
-export interface CotaRaw {
+// Alerta do vigia da cota SBPE (LLM): possível mudança a revisar por humano. Nunca é publicado.
+export interface AlertaCota {
   sac: number;
   price: number;
-  fonteUrl: string;
+  url: string;
+  trecho: string;
+  dataPublicacao: string; // AAAA-MM-DD, como o LLM informou
 }
 
 // Limites do MCMV (teto do imóvel por faixa + subsídio máximo por região). Aditivo ao contrato.
