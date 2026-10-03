@@ -10,8 +10,15 @@ export interface RateByCotistaRegion {
   naoCotista: Record<RateRegion, number>;
 }
 
+// Uma linha da Faixa 2 no gov.br: a taxa sobe com a renda (3 subfaixas). Aditivo ao contrato:
+// `faixa2` continua sendo só a 1ª subfaixa. Linha com 2 valores na tabela → cotista = naoCotista.
+export interface Faixa2Subfaixa extends RateByCotistaRegion {
+  rendaAte: number; // teto da subfaixa (R$ mensal bruto); o piso é o teto da anterior
+}
+
 export interface RatesPayload {
   faixa2: RateByCotistaRegion;
+  faixa2Subfaixas?: Faixa2Subfaixa[]; // ordenadas por rendaAte; ausente se o layout não casou
   faixa3: RateByCotistaRegion;
   classeMedia: number;
   indexers: { trMonthlyPct: number; poupancaMonthlyPct: number };
@@ -30,6 +37,7 @@ export interface RatesPayload {
 // Saída do parser (sem indexers/meta — só o que sai do HTML do gov.br).
 export interface ParsedRates {
   faixa2: RateByCotistaRegion;
+  faixa2Subfaixas?: Faixa2Subfaixa[];
   faixa3: RateByCotistaRegion;
   classeMedia: number;
   publishedAt: string | null;

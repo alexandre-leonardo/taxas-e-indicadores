@@ -26,6 +26,19 @@ describe("parseMcmvRatesHtml", () => {
     expect(r.faixa2.naoCotista.S_SE_CO).toBeCloseTo(5.5, 2);
   });
 
+  it("extrai as 3 subfaixas de renda da Faixa 2 (linha de 2 valores = cotista igual a não cotista)", () => {
+    const r = parseMcmvRatesHtml(html);
+    expect(r.faixa2Subfaixas).toEqual([
+      { rendaAte: 3500, cotista: { N_NE: 4.75, S_SE_CO: 5 }, naoCotista: { N_NE: 5.25, S_SE_CO: 5.5 } },
+      { rendaAte: 4000, cotista: { N_NE: 5.5, S_SE_CO: 6 }, naoCotista: { N_NE: 5.5, S_SE_CO: 6 } },
+      { rendaAte: 5000, cotista: { N_NE: 6.5, S_SE_CO: 7 }, naoCotista: { N_NE: 6.5, S_SE_CO: 7 } },
+    ]);
+  });
+
+  it("subfaixas ausentes quando o layout não casa (consumidor cai no fallback)", () => {
+    expect(parseMcmvRatesHtml("<html><body>sem tabela</body></html>").faixa2Subfaixas).toBeUndefined();
+  });
+
   it("Faixa 3 naoCotista = cotista (tabela sem distinção)", () => {
     const r = parseMcmvRatesHtml(html);
     expect(r.faixa3.naoCotista.N_NE).toBeCloseTo(7.66, 2);

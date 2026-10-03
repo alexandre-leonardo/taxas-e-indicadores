@@ -98,6 +98,7 @@ export function decideUpdate(
 
   const payload: RatesPayload = {
     faixa2: parsed.faixa2,
+    faixa2Subfaixas: parsed.faixa2Subfaixas,
     faixa3: parsed.faixa3,
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },

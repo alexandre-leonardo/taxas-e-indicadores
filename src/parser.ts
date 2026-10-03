@@ -3,10 +3,11 @@
 // Parser sem dependência de DOM — roda igual em Node e Vitest.
 //
 // Âncora "TAXA DE JUROS NOMINAL" isola a tabela de taxas.
-// Faixa 2 — janela 300 chars captura os 4 valores do 1º sub-bracket.
+// Faixa 2 — janela 300 chars captura os 4 valores do 1º sub-bracket (`faixa2`, legado); as 3
+// subfaixas de renda saem em `faixa2Subfaixas`.
 // Faixa 3 — 2 valores; cotista === naoCotista (tabela tem uma linha só).
 // publishedAt — "Atualizado em DD/MM/YYYY" no rodapé (busca na página inteira).
-import type { McmvLimits, ParsedRates } from "./types";
+import type { Faixa2Subfaixa, McmvLimits, ParsedRates } from "./types";
 
 /** "4,75%" → 4.75 */
 function pct(raw: string): number {
@@ -20,6 +21,29 @@ function pctsAfter(text: string, label: RegExp, count: number, windowSize = 600)
   const slice = text.slice(idx, idx + windowSize);
   const matches = slice.match(/\d{1,2},\d{2}\s*%/g) || [];
   return matches.slice(0, count).map(pct);
+}
+
+/**
+ * Linhas da Faixa 2 ("... a R$ 3.500,00 4,75% 5,00% 5,25% 5,50%"): a taxa sobe com a renda.
+ * 4 valores = cotista N/NE, S/SE/CO, não cotista N/NE, S/SE/CO; 2 valores = sem distinção de cotista.
+ * Qualquer linha fora do formato, teto fora de ordem ou taxa fora de 0–20% → undefined (sem chute).
+ */
+function parseFaixa2Subfaixas(tableText: string): Faixa2Subfaixa[] | undefined {
+  const m = tableText.match(/Faixa\s*2([\s\S]*?)Faixa\s*3/i);
+  if (!m) return undefined;
+  const rows = [...m[1].matchAll(/a R\$\s*([\d.]+,\d{2})((?:\s*\d{1,2},\d{2}\s*%)+)/g)];
+  const out: Faixa2Subfaixa[] = [];
+  for (const [, teto, pcts] of rows) {
+    const v = (pcts.match(/\d{1,2},\d{2}/g) ?? []).map(pct);
+    if (v.length !== 2 && v.length !== 4) return undefined;
+    const [cN, cS, nN, nS] = v.length === 4 ? v : [v[0], v[1], v[0], v[1]];
+    out.push({ rendaAte: pct(teto), cotista: { N_NE: cN, S_SE_CO: cS }, naoCotista: { N_NE: nN, S_SE_CO: nS } });
+  }
+  const ok =
+    out.length > 0 &&
+    out.every((s, i) => i === 0 || s.rendaAte > out[i - 1].rendaAte) &&
+    out.flatMap((s) => [...Object.values(s.cotista), ...Object.values(s.naoCotista)]).every((x) => x > 0 && x < 20);
+  return ok ? out : undefined;
 }
 
 export function parseMcmvRatesHtml(html: string): ParsedRates {
@@ -42,6 +66,7 @@ export function parseMcmvRatesHtml(html: string): ParsedRates {
       cotista: { N_NE: f2[0], S_SE_CO: f2[1] },
       naoCotista: { N_NE: f2[2], S_SE_CO: f2[3] },
     },
+    faixa2Subfaixas: parseFaixa2Subfaixas(tableText),
     faixa3: {
       cotista: { N_NE: f3[0], S_SE_CO: f3[1] },
       naoCotista: { N_NE: f3[0], S_SE_CO: f3[1] },
