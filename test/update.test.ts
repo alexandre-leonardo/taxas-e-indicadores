@@ -80,6 +80,14 @@ describe("decideUpdate — sbpeBalcao (constante revisada por humano)", () => {
   it("igual à SBPE_BALCAO_VIGENTE não marca changed", () => {
     expect(decideUpdate(makeOld(), parsed, same, null, now, SOURCE).changed).toBe(false);
   });
+  it("degrau por renda é coerente (guarda edição manual da constante)", () => {
+    const f = SBPE_BALCAO_VIGENTE.sfh.semRelacionamentoPorRenda;
+    expect(f.at(-1)!.rendaAte).toBeNull(); // última faixa sem teto
+    const tetos = f.slice(0, -1).map((x) => x.rendaAte!);
+    expect(tetos.every((t, i) => t > 0 && (i === 0 || t > tetos[i - 1]))).toBe(true);
+    expect(f.every((x) => x.efetivaAnualPct > 0 && x.efetivaAnualPct < 30)).toBe(true);
+    expect(f[0].efetivaAnualPct).toBe(SBPE_BALCAO_VIGENTE.sfh.efetivaAnualPct.semRelacionamento);
+  });
   it("seed sem sbpeBalcao (pré-feature) publica a SBPE_BALCAO_VIGENTE", () => {
     const old = makeOld();
     delete (old as { sbpeBalcao?: unknown }).sbpeBalcao;

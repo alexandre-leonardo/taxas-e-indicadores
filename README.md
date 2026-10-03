@@ -21,7 +21,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/tax
   "classeMedia": 10,
   "indexers": { "trMonthlyPct": 0.1709, "poupancaMonthlyPct": 0.6734 },
   "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2025-10-13T00:00:00.000Z" },
-  "sbpeBalcao": { "sfh": { "tetoImovel": 2250000, "efetivaAnualPct": { "semRelacionamento": 11.49, "comRelacionamento": 11.19 }, "indexador": "TR" }, "fonteUrl": "https://...", "verificadoEm": "2026-10-03T00:00:00.000Z" },
+  "sbpeBalcao": { "sfh": { "tetoImovel": 2250000, "efetivaAnualPct": { "semRelacionamento": 11.49, "comRelacionamento": 11.19 }, "semRelacionamentoPorRenda": [{ "rendaAte": 77500, "efetivaAnualPct": 11.49 }, { "rendaAte": null, "efetivaAnualPct": 13.4 }], "fontePorRendaUrl": "https://simuladorhabitacao.caixa.gov.br/calculadora", "indexador": "TR" }, "fonteUrl": "https://...", "verificadoEm": "2026-10-03T00:00:00.000Z" },
   "mcmv": { "tetoImovel": { "faixa1e2": { "min": 210000, "max": 275000 }, "faixa3": 400000, "classeMedia": 600000 }, "subsidioMaxPorRegiao": { "N": 65000, "demais": 55000 } },
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/...",
@@ -38,7 +38,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/tax
 - `classeMedia`: taxa nominal anual (%).
 - `indexers`: TR e poupança mensais (%) do BCB.
 - `cotaMaxima.sbpe.sac` / `.price`: percentual máximo do valor do imóvel financiável pelo SBPE (SAC e Price), revisado manualmente a partir de fonte oficial; `atualizadoEm` é o início da vigência. Um vigia (LLM) abre issue no repo quando acha notícia de mudança.
-- `sbpeBalcao.sfh`: taxa de balcão SBPE da Caixa no SFH (imóvel até `tetoImovel`), **efetiva** anual (%) + TR, sem e com relacionamento. Revisada manualmente; `verificadoEm` é a data da conferência. SFI (acima do teto) ainda não é publicado. Campo opcional — trate ausência com fallback. Um vigia (LLM) abre issue quando acha notícia de mudança.
+- `sbpeBalcao.sfh`: taxa de balcão SBPE da Caixa no SFH (imóvel até `tetoImovel`), **efetiva** anual (%) + TR, sem e com relacionamento. `sfh.semRelacionamentoPorRenda`: degrau por renda mensal da calculadora da Caixa (até R$ 77.500 → 11,49%; acima → 13,40%; `rendaAte: null` = sem teto) — a taxa depende da renda, não do valor do imóvel. Revisada manualmente; `verificadoEm` é a data da conferência. SFI (acima do teto) ainda não é publicado. Campo opcional — trate ausência com fallback. Um vigia (LLM) abre issue quando acha notícia de mudança.
 - `mcmv.tetoImovel`: teto do valor do imóvel por faixa MCMV em reais (`faixa1e2` é range por município — `min`/`max` nacionais; `faixa3` e `classeMedia` são valores únicos). `mcmv.subsidioMaxPorRegiao`: teto do subsídio (desconto) por região (`N` = Norte, `demais` = demais regiões) — é o máximo possível, não o valor que cada família recebe.
 - `meta.retrievedAt`: quando o dado foi raspado. `meta.publishedAt`: data informada pelo gov.br.
 - `meta.rulesStale`: sempre `false` no arquivo; **o cliente recalcula** por idade (ver abaixo).

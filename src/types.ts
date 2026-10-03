@@ -63,6 +63,10 @@ export interface SbpeBalcao {
   sfh: {
     tetoImovel: number; // R$ — acima disso é SFI
     efetivaAnualPct: { semRelacionamento: number; comRelacionamento: number };
+    // Degrau por RENDA mensal bruta da calculadora rápida da Caixa (sem relacionamento): a taxa
+    // depende da renda, não do valor do imóvel. Ordenado; rendaAte null = sem teto (última faixa).
+    semRelacionamentoPorRenda: Array<{ rendaAte: number | null; efetivaAnualPct: number }>;
+    fontePorRendaUrl: string; // conferido na mesma data de verificadoEm
     indexador: "TR";
   };
   fonteUrl: string;

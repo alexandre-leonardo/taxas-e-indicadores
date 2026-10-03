@@ -39,7 +39,8 @@ export const COTA_VIGENTE: CotaMaxima = {
  * Taxa de balcão SBPE/SFH da Caixa (efetiva a.a. + TR) — revisada por HUMANO, mesmo modelo da cota.
  * Conferida em 03/10/2026 contra blogs de imobiliárias (a Caixa bloqueia robô e não há página
  * oficial acessível); bate com a calibração do simulador da Caixa feita pelo engaja em 06/2026
- * (10,9259% nominal ↔ 11,49% efetiva). SFI fica de fora até alguém conferir.
+ * (10,9259% nominal ↔ 11,49% efetiva) e com a calculadora oficial (degrau por renda, abaixo).
+ * SFI fica de fora até alguém conferir.
  * Mudou? Edite aqui (verificadoEm = data da conferência), push e rode a Action. O vigia
  * (sources.ts:vigiarSbpeBalcao) abre issue com label sbpe-balcao quando acha notícia posterior.
  */
@@ -47,6 +48,13 @@ export const SBPE_BALCAO_VIGENTE: SbpeBalcao = {
   sfh: {
     tetoImovel: 2_250_000,
     efetivaAnualPct: { semRelacionamento: 11.49, comRelacionamento: 11.19 },
+    // Medido na calculadora da Caixa em 03/10/2026 (busca binária: renda 77.500 → 11,49; 77.501 → 13,40).
+    // Imóveis de R$ 700 mil a R$ 10 mi: mesma taxa (sem degrau no teto do SFH). 13,40 NÃO é a taxa do SFI.
+    semRelacionamentoPorRenda: [
+      { rendaAte: 77_500, efetivaAnualPct: 11.49 },
+      { rendaAte: null, efetivaAnualPct: 13.4 },
+    ],
+    fontePorRendaUrl: "https://simuladorhabitacao.caixa.gov.br/calculadora",
     indexador: "TR",
   },
   fonteUrl: "https://larya.com.br/blog/taxas-de-juros-financiamento-imobiliario-2026/",
