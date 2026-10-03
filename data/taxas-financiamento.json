@@ -9,6 +9,41 @@
       "S_SE_CO": 5.5
     }
   },
+  "faixa2Subfaixas": [
+    {
+      "rendaAte": 3500,
+      "cotista": {
+        "N_NE": 4.75,
+        "S_SE_CO": 5
+      },
+      "naoCotista": {
+        "N_NE": 5.25,
+        "S_SE_CO": 5.5
+      }
+    },
+    {
+      "rendaAte": 4000,
+      "cotista": {
+        "N_NE": 5.5,
+        "S_SE_CO": 6
+      },
+      "naoCotista": {
+        "N_NE": 5.5,
+        "S_SE_CO": 6
+      }
+    },
+    {
+      "rendaAte": 5000,
+      "cotista": {
+        "N_NE": 6.5,
+        "S_SE_CO": 7
+      },
+      "naoCotista": {
+        "N_NE": 6.5,
+        "S_SE_CO": 7
+      }
+    }
+  ],
   "faixa3": {
     "cotista": {
       "N_NE": 7.66,
@@ -49,9 +84,9 @@
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-10-03T20:05:02.592Z",
+    "retrievedAt": "2026-10-03T20:11:28.519Z",
     "publishedAt": "28/06/2026",
-    "contentHash": "8a6a8889f8222fb0737dee4498306017692237d390eb622ad7fe9bd9436c4f7c",
+    "contentHash": "4aa4309f1229e2d07e6f52ccd418ff8da6559d7e87ac159d24770947ebae6c7f",
     "rulesStale": false
   }
 }
