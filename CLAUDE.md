@@ -15,6 +15,10 @@ jsDelivr. Sem banco, sem servidor — o git é o "banco" (cada commit = uma vers
   posterior à vigência e, se o filtro `avaliarAlertaCota` achar crível, o workflow abre/comenta uma
   issue com label `cota-sbpe`. Confirmou? Edite `COTA_VIGENTE`, push e rode a Action (publica + purge).
   Sem `OPENROUTER_API_KEY` o vigia só não roda.
+- A taxa de balcão SBPE/SFH da Caixa (`sbpeBalcao`, efetiva a.a. + TR, sem/com relacionamento) segue o
+  mesmo modelo: constante `src/update.ts:SBPE_BALCAO_VIGENTE` (`verificadoEm` = data da conferência)
+  e vigia `src/sources.ts:vigiarSbpeBalcao` → issue label `sbpe-balcao`. SFI não é publicado (não
+  conferido). Fonte atual é blog de imobiliária: a Caixa bloqueia robô e não há página oficial acessível.
 - Os limites do MCMV (`mcmv`: teto do imóvel por faixa + subsídio máximo por região) saem por parser
   determinístico do MESMO HTML do gov.br (`src/parser.ts:parseMcmvLimits`), sem LLM. Guarda
   `src/update.ts:isMcmvPlausible` preserva o valor anterior se o layout mudar.
@@ -54,4 +58,5 @@ Taxas:
   do gov.br? Atualize a fixture (`test/fixtures/mcmv-govbr.html`) e recalibre os testes.
 - Toda taxa publicada passa por `isPlausible` (0 < v < 20). Implausível → a Action falha, não publica.
 - Indexadores do BCB têm guarda anti-zero: falha de rede nunca zera bons valores.
-- A cota SBPE nunca vem de LLM: só muda editando `COTA_VIGENTE`. O vigia apenas abre issue.
+- Cota e taxa de balcão SBPE nunca vêm de LLM: só mudam editando `COTA_VIGENTE` / `SBPE_BALCAO_VIGENTE`.
+  Os vigias apenas abrem issue.

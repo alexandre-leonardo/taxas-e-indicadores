@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import type {
   CotaMaxima,
+  SbpeBalcao,
   IndexersRaw,
   McmvLimits,
   ParsedRates,
@@ -32,6 +33,24 @@ export const COTA_VIGENTE: CotaMaxima = {
   fonteUrl:
     "https://caixanoticias.caixa.gov.br/Paginas/Not%C3%ADcias/2025/10-OUTUBRO/CAIXA-e-Governo-Federal-fortalecem-politica-habitacional-com-novas-medidas-para-o-credito-imobiliario.aspx",
   atualizadoEm: "2025-10-13T00:00:00.000Z",
+};
+
+/**
+ * Taxa de balcão SBPE/SFH da Caixa (efetiva a.a. + TR) — revisada por HUMANO, mesmo modelo da cota.
+ * Conferida em 03/10/2026 contra blogs de imobiliárias (a Caixa bloqueia robô e não há página
+ * oficial acessível); bate com a calibração do simulador da Caixa feita pelo engaja em 06/2026
+ * (10,9259% nominal ↔ 11,49% efetiva). SFI fica de fora até alguém conferir.
+ * Mudou? Edite aqui (verificadoEm = data da conferência), push e rode a Action. O vigia
+ * (sources.ts:vigiarSbpeBalcao) abre issue com label sbpe-balcao quando acha notícia posterior.
+ */
+export const SBPE_BALCAO_VIGENTE: SbpeBalcao = {
+  sfh: {
+    tetoImovel: 2_250_000,
+    efetivaAnualPct: { semRelacionamento: 11.49, comRelacionamento: 11.19 },
+    indexador: "TR",
+  },
+  fonteUrl: "https://larya.com.br/blog/taxas-de-juros-financiamento-imobiliario-2026/",
+  verificadoEm: "2026-10-03T00:00:00.000Z",
 };
 
 /** Limites MCMV plausíveis: tetos em 50k–5M (max≥min), subsídios em 1k–500k. */
@@ -80,6 +99,9 @@ export function decideUpdate(
   // Cota: constante revisada por humano. Mudou a constante → publica na próxima rodada.
   const cotaMaxima = COTA_VIGENTE;
   const cotaChanged = JSON.stringify(old.cotaMaxima) !== JSON.stringify(COTA_VIGENTE);
+  // Taxa de balcão SBPE: idem (constante revisada por humano).
+  const sbpeBalcao = SBPE_BALCAO_VIGENTE;
+  const sbpeBalcaoChanged = JSON.stringify(old.sbpeBalcao) !== JSON.stringify(SBPE_BALCAO_VIGENTE);
 
   // MCMV: parse determinístico do gov.br. Estável (sem churn); preserva old se implausível.
   // ponytail: 6 params posicionais — se entrar um 4º source, agrupar num objeto `sources`.
@@ -95,6 +117,7 @@ export function decideUpdate(
     old.indexers.trMonthlyPct !== tr ||
     old.indexers.poupancaMonthlyPct !== poup ||
     cotaChanged ||
+    sbpeBalcaoChanged ||
     mcmvChanged;
 
   if (!changed) return { changed: false, payload: old };
@@ -106,6 +129,7 @@ export function decideUpdate(
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },
     cotaMaxima,
+    sbpeBalcao,
     mcmv,
     meta: {
       sourceUrl,

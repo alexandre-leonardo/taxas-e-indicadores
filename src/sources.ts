@@ -1,28 +1,62 @@
 // src/sources.ts
 // I/O de rede isolado. Sem lógica de negócio — só busca e normaliza dados das fontes.
 import { appendFileSync } from "node:fs";
-import type { AlertaCota, CotaMaxima, IndexersRaw, PontoSerie } from "./types";
+import type { AlertaCota, AlertaSbpeBalcao, CotaMaxima, IndexersRaw, PontoSerie, SbpeBalcao } from "./types";
 
 /**
- * Parser puro da resposta do vigia (JSON do LLM) → AlertaCota, ou null se não for um alerta crível.
- * Crível = mudou:true, URL http(s), notícia publicada DEPOIS da vigência atual, percentuais novos
- * (≠ atuais, 0–100) e trecho que contém os dois números. Alucinação aqui custa só um alarme falso
- * (vira issue para revisão humana) — nunca publica número.
+ * Critérios comuns a todo alerta de vigia: mudou:true, URL http(s), notícia datada DEPOIS de
+ * `desdeIso` e trecho literal. null se faltar algo. Alucinação nos vigias custa só um alarme falso
+ * (vira issue para revisão humana) — nenhum vigia publica número.
  */
+function alertaBase(o: Record<string, unknown>, desdeIso: string): { url: string; trecho: string; dataPublicacao: string } | null {
+  const { mudou, url, trecho, dataPublicacao } = o;
+  if (mudou !== true) return null;
+  if (typeof url !== "string" || typeof trecho !== "string" || typeof dataPublicacao !== "string") return null;
+  if (!/^https?:\/\//.test(url) || !trecho.trim()) return null;
+  const pub = Date.parse(dataPublicacao);
+  if (Number.isNaN(pub) || pub <= Date.parse(desdeIso)) return null;
+  return { url, trecho, dataPublicacao };
+}
+
+/** O trecho cita o número? Aceita "11,49", "11.49" e, para inteiros, "80". */
+function citaNumero(trecho: string, n: number): boolean {
+  return [String(n), n.toFixed(2), n.toFixed(2).replace(".", ",")].some((f) => trecho.includes(f));
+}
+
+/** Resposta do vigia da cota → AlertaCota crível (percentuais novos, 0–100, citados no trecho) ou null. */
 export function avaliarAlertaCota(content: string, atual: CotaMaxima): AlertaCota | null {
   try {
     const o = JSON.parse(content) as Record<string, unknown>;
-    if (o.mudou !== true) return null;
-    const { sac, price, url, trecho, dataPublicacao } = o;
-    if (typeof sac !== "number" || typeof price !== "number") return null;
-    if (typeof url !== "string" || typeof trecho !== "string" || typeof dataPublicacao !== "string") return null;
-    if (!/^https?:\/\//.test(url)) return null;
+    const base = alertaBase(o, atual.atualizadoEm);
+    const { sac, price } = o;
+    if (!base || typeof sac !== "number" || typeof price !== "number") return null;
     if (!(sac > 0 && sac <= 100 && price > 0 && price <= 100)) return null;
     if (sac === atual.sbpe.sac && price === atual.sbpe.price) return null;
-    const pub = Date.parse(dataPublicacao);
-    if (Number.isNaN(pub) || pub <= Date.parse(atual.atualizadoEm)) return null;
-    if (!trecho.includes(String(sac)) || !trecho.includes(String(price))) return null;
-    return { sac, price, url, trecho, dataPublicacao };
+    if (!citaNumero(base.trecho, sac) || !citaNumero(base.trecho, price)) return null;
+    return { sac, price, ...base };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resposta do vigia da taxa de balcão SFH → alerta crível ou null. Crível = taxas em 0–30% a.a.,
+ * com relacionamento ≤ sem, ao menos uma diferente da vigente, e TODA taxa que mudou citada no trecho
+ * (notícia que só traz o "a partir de" pode repetir a outra taxa vigente).
+ */
+export function avaliarAlertaSbpeBalcao(content: string, atual: SbpeBalcao): AlertaSbpeBalcao | null {
+  try {
+    const o = JSON.parse(content) as Record<string, unknown>;
+    const base = alertaBase(o, atual.verificadoEm);
+    const { semRelacionamento: sem, comRelacionamento: com } = o;
+    if (!base || typeof sem !== "number" || typeof com !== "number") return null;
+    if (!(sem > 0 && sem < 30 && com > 0 && com < 30 && com <= sem)) return null;
+    const vig = atual.sfh.efetivaAnualPct;
+    const mudaram = [sem !== vig.semRelacionamento && sem, com !== vig.comRelacionamento && com].filter(
+      (x): x is number => typeof x === "number",
+    );
+    if (!mudaram.length || !mudaram.every((n) => citaNumero(base.trecho, n))) return null;
+    return { semRelacionamento: sem, comRelacionamento: com, ...base };
   } catch {
     return null;
   }
@@ -47,20 +81,40 @@ const BCB_BASE = process.env.BCB_BASE ?? "https://api.bcb.gov.br/dados/serie/bcd
 const OPENROUTER_BASE = process.env.OPENROUTER_BASE ?? "https://openrouter.ai/api/v1";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
 
-// O LLM NÃO informa a cota (inventava 70/50 citando um FAQ que só diz "até 90%"). Ele só vigia:
-// procura notícia de mudança posterior à vigência atual; achou → issue para revisão humana.
-function vigiaPrompt(atual: CotaMaxima): string {
-  const desde = new Date(atual.atualizadoEm).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+// Os LLMs NÃO informam números (inventavam a cota 70/50 citando um FAQ que só diz "até 90%").
+// Eles só vigiam: procuram notícia de mudança posterior à data do valor atual; achou → issue.
+const REGRAS_VIGIA =
+  "REGRAS:\n" +
+  "- Responda mudou=true SOMENTE se encontrou a notícia nesta busca. Nunca responda de memória.\n" +
+  "- url = endereço da notícia; dataPublicacao = data da notícia (AAAA-MM-DD); trecho = frase " +
+  "LITERAL da notícia contendo os novos números.\n" +
+  "- Se não encontrar mudança, responda mudou=false, números 0 e textos vazios.";
+
+const dataBr = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+
+function promptCota(atual: CotaMaxima): string {
+  const desde = dataBr(atual.atualizadoEm);
   return (
     "Você é um vigia de mudanças regulatórias. A cota máxima de financiamento imobiliário SBPE da " +
     `Caixa Econômica Federal vigente é SAC ${atual.sbpe.sac}% / Price ${atual.sbpe.price}% desde ${desde}.\n` +
     `Busque na web notícias PUBLICADAS DEPOIS de ${desde} que anunciem ALTERAÇÃO desses percentuais ` +
-    "(Caixa, gov.br ou imprensa de grande circulação).\n" +
-    "REGRAS:\n" +
-    "- Responda mudou=true SOMENTE se encontrou a notícia nesta busca. Nunca responda de memória.\n" +
-    "- url = endereço da notícia; dataPublicacao = data da notícia (AAAA-MM-DD); trecho = frase " +
-    "LITERAL da notícia contendo os novos percentuais; sac/price = os novos percentuais.\n" +
-    "- Se não encontrar mudança, responda mudou=false, sac=0, price=0 e os textos vazios."
+    "(Caixa, gov.br ou imprensa de grande circulação). sac/price = os novos percentuais.\n" +
+    REGRAS_VIGIA
+  );
+}
+
+function promptSbpeBalcao(atual: SbpeBalcao): string {
+  const desde = dataBr(atual.verificadoEm);
+  const v = atual.sfh.efetivaAnualPct;
+  return (
+    "Você é um vigia de mudanças em taxas de juros. A taxa de balcão do financiamento imobiliário da " +
+    "Caixa Econômica Federal com recursos da poupança (SBPE), no SFH, conferida em " +
+    `${desde}, é ${v.semRelacionamento}% a.a. + TR para cliente SEM relacionamento e ` +
+    `${v.comRelacionamento}% a.a. + TR COM relacionamento (taxas efetivas).\n` +
+    `Busque na web notícias PUBLICADAS DEPOIS de ${desde} que anunciem ALTERAÇÃO dessas taxas ` +
+    "(Caixa, gov.br ou imprensa de grande circulação). semRelacionamento/comRelacionamento = as novas " +
+    "taxas efetivas % a.a.; se a notícia só trouxer uma delas, repita a vigente na outra.\n" +
+    REGRAS_VIGIA
   );
 }
 
@@ -98,15 +152,18 @@ export async function fetchIndexers(): Promise<IndexersRaw> {
 }
 
 /**
- * Vigia da cota SBPE via OpenRouter com web search. Retorna um alerta crível ou null.
- * Nunca lança: sem OPENROUTER_API_KEY, erro de rede, status não-2xx ou resposta não crível → null.
+ * Uma chamada de vigia ao OpenRouter (web search, JSON estrito). Devolve o conteúdo cru ou null,
+ * deixando no log o motivo de não ter rodado. Nunca lança.
+ * `numeros` = campos numéricos específicos do vigia (além de mudou/dataPublicacao/url/trecho).
  */
-export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> {
+async function chamarVigia(nome: string, prompt: string, numeros: string[]): Promise<string | null> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
-    console.log("[vigia] sem OPENROUTER_API_KEY — vigia não rodou.");
+    console.log(`[vigia:${nome}] sem OPENROUTER_API_KEY — vigia não rodou.`);
     return null;
   }
+  const campos = ["mudou", ...numeros, "dataPublicacao", "url", "trecho"];
+  const tipo = (c: string) => (c === "mudou" ? "boolean" : numeros.includes(c) ? "number" : "string");
   try {
     const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
       method: "POST",
@@ -119,23 +176,16 @@ export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> 
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
         plugins: [{ id: "web", max_results: 10 }],
-        messages: [{ role: "user", content: vigiaPrompt(atual) }],
+        messages: [{ role: "user", content: prompt }],
         response_format: {
           type: "json_schema",
           json_schema: {
-            name: "vigia_cota",
+            name: `vigia_${nome.replace(/-/g, "_")}`,
             strict: true,
             schema: {
               type: "object",
-              properties: {
-                mudou: { type: "boolean" },
-                sac: { type: "number" },
-                price: { type: "number" },
-                dataPublicacao: { type: "string" },
-                url: { type: "string" },
-                trecho: { type: "string" },
-              },
-              required: ["mudou", "sac", "price", "dataPublicacao", "url", "trecho"],
+              properties: Object.fromEntries(campos.map((c) => [c, { type: tipo(c) }])),
+              required: campos,
               additionalProperties: false,
             },
           },
@@ -145,23 +195,38 @@ export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> 
       }),
     });
     if (!res.ok) {
-      console.warn(`::warning::[vigia] OpenRouter HTTP ${res.status} — vigia não rodou.`);
+      console.warn(`::warning::[vigia:${nome}] OpenRouter HTTP ${res.status} — vigia não rodou.`);
       return null;
     }
     const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = j?.choices?.[0]?.message?.content;
-    if (!content) {
-      console.warn("::warning::[vigia] resposta do OpenRouter sem conteúdo — vigia não rodou.");
-      return null;
-    }
-    const alerta = avaliarAlertaCota(content, atual);
-    // ponytail: loga a resposta descartada para auditar se o filtro está barrando alucinação ou notícia real.
-    if (!alerta) console.log(`[vigia] nenhuma mudança crível. Resposta do LLM: ${content}`);
-    return alerta;
+    if (!content) console.warn(`::warning::[vigia:${nome}] resposta do OpenRouter sem conteúdo — vigia não rodou.`);
+    return content ?? null;
   } catch (e) {
-    console.warn(`::warning::[vigia] erro na chamada ao OpenRouter: ${String(e)} — vigia não rodou.`);
+    console.warn(`::warning::[vigia:${nome}] erro na chamada ao OpenRouter: ${String(e)} — vigia não rodou.`);
     return null;
   }
+}
+
+/** Roda um vigia e filtra a resposta. Loga a resposta descartada (audita alucinação × notícia real). */
+async function vigiar<T>(nome: string, prompt: string, numeros: string[], avaliar: (c: string) => T | null): Promise<T | null> {
+  const content = await chamarVigia(nome, prompt, numeros);
+  if (!content) return null;
+  const alerta = avaliar(content);
+  if (!alerta) console.log(`[vigia:${nome}] nenhuma mudança crível. Resposta do LLM: ${content}`);
+  return alerta;
+}
+
+/** Vigia da cota SBPE. Alerta crível ou null. */
+export function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> {
+  return vigiar("cota-sbpe", promptCota(atual), ["sac", "price"], (c) => avaliarAlertaCota(c, atual));
+}
+
+/** Vigia da taxa de balcão SFH. Alerta crível ou null. */
+export function vigiarSbpeBalcao(atual: SbpeBalcao): Promise<AlertaSbpeBalcao | null> {
+  return vigiar("sbpe-balcao", promptSbpeBalcao(atual), ["semRelacionamento", "comRelacionamento"], (c) =>
+    avaliarAlertaSbpeBalcao(c, atual),
+  );
 }
 
 /**

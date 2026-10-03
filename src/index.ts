@@ -4,28 +4,48 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isPlausible, parseMcmvLimits, parseMcmvRatesHtml } from "./parser";
-import { COTA_VIGENTE, decideUpdate } from "./update";
-import { fetchGovBrHtml, fetchIndexers, vigiarCota, sinalizarFalhaBcb, SOURCE_URL } from "./sources";
-import type { AlertaCota, RatesPayload } from "./types";
+import { COTA_VIGENTE, SBPE_BALCAO_VIGENTE, decideUpdate } from "./update";
+import { fetchGovBrHtml, fetchIndexers, vigiarCota, vigiarSbpeBalcao, sinalizarFalhaBcb, SOURCE_URL } from "./sources";
+import type { AlertaCota, AlertaSbpeBalcao, RatesPayload } from "./types";
 
 // Caminho relativo a src/ — o JSON-banco vive na raiz do repo, em data/.
 const DATA_PATH = fileURLToPath(new URL("../data/taxas-financiamento.json", import.meta.url));
-// Lido pelo workflow (hashFiles) para abrir/comentar a issue do vigia. Ignorado pelo git.
-const ALERTA_PATH = fileURLToPath(new URL("../alerta-cota.md", import.meta.url));
+// alerta-<label>.md: lidos pelo workflow, que abre/comenta uma issue com essa label. Ignorados pelo git.
+const alertaPath = (label: string) => fileURLToPath(new URL(`../alerta-${label}.md`, import.meta.url));
 
-function corpoAlerta(a: AlertaCota): string {
-  const v = COTA_VIGENTE;
-  return [
-    "O vigia (LLM + busca web) encontrou uma possível mudança na cota SBPE da Caixa. **Nada foi publicado** — confira a fonte.",
+const RODAPE_ALERTA = (constante: string, campoData: string) =>
+  `Se confirmar: edite \`${constante}\` em \`src/update.ts\` (${campoData}), push e rode a Action. Se for alarme falso: feche a issue.`;
+
+function gravarAlerta(label: string, titulo: string, linhas: string[], a: { url: string; trecho: string }, rodape: string): void {
+  const corpo = [
+    `O vigia (LLM + busca web) encontrou uma possível mudança: **${titulo}**. **Nada foi publicado** — confira a fonte.`,
     "",
-    `- Vigente no motor: SAC ${v.sbpe.sac}% / Price ${v.sbpe.price}% desde ${v.atualizadoEm.slice(0, 10)}`,
-    `- Segundo o vigia: SAC ${a.sac}% / Price ${a.price}% — notícia de ${a.dataPublicacao}`,
+    ...linhas,
     `- Fonte: ${a.url}`,
     "",
     `> ${a.trecho.replace(/\n/g, " ")}`,
     "",
-    "Se confirmar: edite `COTA_VIGENTE` em `src/update.ts` (atualizadoEm = início da vigência), push e rode a Action. Se for alarme falso: feche a issue.",
+    rodape,
   ].join("\n");
+  writeFileSync(alertaPath(label), corpo + "\n", "utf-8");
+  console.warn(`::warning::[vigia:${label}] possível mudança — ${titulo} (${a.url})`);
+}
+
+function alertarCota(a: AlertaCota): void {
+  const v = COTA_VIGENTE;
+  gravarAlerta("cota-sbpe", "cota SBPE da Caixa", [
+    `- Vigente no motor: SAC ${v.sbpe.sac}% / Price ${v.sbpe.price}% desde ${v.atualizadoEm.slice(0, 10)}`,
+    `- Segundo o vigia: SAC ${a.sac}% / Price ${a.price}% — notícia de ${a.dataPublicacao}`,
+  ], a, RODAPE_ALERTA("COTA_VIGENTE", "atualizadoEm = início da vigência"));
+}
+
+function alertarSbpeBalcao(a: AlertaSbpeBalcao): void {
+  const v = SBPE_BALCAO_VIGENTE;
+  const e = v.sfh.efetivaAnualPct;
+  gravarAlerta("sbpe-balcao", "taxa de balcão SBPE/SFH da Caixa", [
+    `- Vigente no motor: ${e.semRelacionamento}% sem / ${e.comRelacionamento}% com relacionamento (efetiva a.a. + TR), conferida em ${v.verificadoEm.slice(0, 10)}`,
+    `- Segundo o vigia: ${a.semRelacionamento}% sem / ${a.comRelacionamento}% com relacionamento — notícia de ${a.dataPublicacao}`,
+  ], a, RODAPE_ALERTA("SBPE_BALCAO_VIGENTE", "verificadoEm = data da conferência"));
 }
 
 /** Lê o JSON-banco atual. Mensagem dedicada se o seed estiver ausente (não deveria, está commitado). */
@@ -51,11 +71,13 @@ async function main(): Promise<void> {
   }
 
   const mcmvRaw = parseMcmvLimits(html);
-  const [raw, alerta] = await Promise.all([fetchIndexers(), vigiarCota(COTA_VIGENTE)]);
-  if (alerta) {
-    writeFileSync(ALERTA_PATH, corpoAlerta(alerta) + "\n", "utf-8");
-    console.warn(`::warning::[vigia] possível mudança na cota SBPE: SAC ${alerta.sac}/Price ${alerta.price} (${alerta.url})`);
-  }
+  const [raw, alertaCota, alertaBalcao] = await Promise.all([
+    fetchIndexers(),
+    vigiarCota(COTA_VIGENTE),
+    vigiarSbpeBalcao(SBPE_BALCAO_VIGENTE),
+  ]);
+  if (alertaCota) alertarCota(alertaCota);
+  if (alertaBalcao) alertarSbpeBalcao(alertaBalcao);
   // Mesma régua da guarda anti-zero do decideUpdate: null/≤0 = falhou (e será preservado).
   const valido = (v: number | null) => typeof v === "number" && v > 0;
   const falhos = [!valido(raw.trRaw) && "TR (7811)", !valido(raw.poupRaw) && "poupança (195)"].filter(Boolean);
@@ -73,6 +95,7 @@ async function main(): Promise<void> {
       `retrievedAt=${payload.meta.retrievedAt} ` +
       `tr=${payload.indexers.trMonthlyPct} poup=${payload.indexers.poupancaMonthlyPct} ` +
       `cota=SAC ${payload.cotaMaxima?.sbpe?.sac ?? "—"}%/Price ${payload.cotaMaxima?.sbpe?.price ?? "—"}% ` +
+      `balcaoSFH=${payload.sbpeBalcao?.sfh.efetivaAnualPct.semRelacionamento ?? "—"}/${payload.sbpeBalcao?.sfh.efetivaAnualPct.comRelacionamento ?? "—"}% ` +
       `tetoCM=${payload.mcmv?.tetoImovel?.classeMedia ?? "—"}`,
   );
 }

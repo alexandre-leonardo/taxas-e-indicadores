@@ -23,6 +23,7 @@ export interface RatesPayload {
   classeMedia: number;
   indexers: { trMonthlyPct: number; poupancaMonthlyPct: number };
   cotaMaxima: CotaMaxima;
+  sbpeBalcao?: SbpeBalcao; // aditivo (10/2026); ausente só em seeds antigos
   mcmv: McmvLimits;
   meta: {
     sourceUrl: string;
@@ -54,6 +55,27 @@ export interface CotaMaxima {
   sbpe: { sac: number; price: number };
   fonteUrl: string;
   atualizadoEm: string; // ISO 8601 — início da vigência (valor revisado por humano em update.ts:COTA_VIGENTE)
+}
+
+// Taxa de balcão SBPE da Caixa — revisada por HUMANO (update.ts:SBPE_BALCAO_VIGENTE), nunca por LLM.
+// Taxa EFETIVA anual (% a.a.) + indexador. SFI (imóvel acima de tetoImovel) ainda não publicado: não conferido.
+export interface SbpeBalcao {
+  sfh: {
+    tetoImovel: number; // R$ — acima disso é SFI
+    efetivaAnualPct: { semRelacionamento: number; comRelacionamento: number };
+    indexador: "TR";
+  };
+  fonteUrl: string;
+  verificadoEm: string; // ISO 8601 — quando um humano conferiu o valor (não é início de vigência)
+}
+
+// Alerta do vigia da taxa de balcão SFH. Nunca é publicado.
+export interface AlertaSbpeBalcao {
+  semRelacionamento: number;
+  comRelacionamento: number;
+  url: string;
+  trecho: string;
+  dataPublicacao: string;
 }
 
 // Alerta do vigia da cota SBPE (LLM): possível mudança a revisar por humano. Nunca é publicado.

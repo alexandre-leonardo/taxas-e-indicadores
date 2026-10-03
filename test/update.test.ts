@@ -1,6 +1,6 @@
 // test/update.test.ts
 import { describe, it, expect } from "vitest";
-import { COTA_VIGENTE, decideUpdate, isMcmvPlausible, sha256 } from "../src/update";
+import { COTA_VIGENTE, SBPE_BALCAO_VIGENTE, decideUpdate, isMcmvPlausible, sha256 } from "../src/update";
 import type { ParsedRates, RatesPayload } from "../src/types";
 
 const SOURCE = "https://www.gov.br/cidades/mcmv-fgts";
@@ -19,6 +19,7 @@ function makeOld(over: Partial<RatesPayload> = {}): RatesPayload {
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: 0.1709, poupancaMonthlyPct: 0.6734 },
     cotaMaxima: COTA_VIGENTE,
+    sbpeBalcao: SBPE_BALCAO_VIGENTE,
     mcmv: {
       tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
       subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
@@ -71,6 +72,20 @@ describe("decideUpdate", () => {
     const r = decideUpdate(makeOld(), parsed, { trRaw: 0, poupRaw: 0 }, null, now, SOURCE);
     expect(r.changed).toBe(false);
     expect(r.payload.indexers.trMonthlyPct).toBe(0.1709);
+  });
+});
+
+describe("decideUpdate — sbpeBalcao (constante revisada por humano)", () => {
+  const same = { trRaw: 0.1709, poupRaw: 0.6734 };
+  it("igual à SBPE_BALCAO_VIGENTE não marca changed", () => {
+    expect(decideUpdate(makeOld(), parsed, same, null, now, SOURCE).changed).toBe(false);
+  });
+  it("seed sem sbpeBalcao (pré-feature) publica a SBPE_BALCAO_VIGENTE", () => {
+    const old = makeOld();
+    delete (old as { sbpeBalcao?: unknown }).sbpeBalcao;
+    const r = decideUpdate(old, parsed, same, null, now, SOURCE);
+    expect(r.changed).toBe(true);
+    expect(r.payload.sbpeBalcao).toEqual(SBPE_BALCAO_VIGENTE);
   });
 });
 

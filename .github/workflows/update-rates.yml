@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  issues: write # vigia da cota SBPE abre/comenta issue
+  issues: write # vigias (cota SBPE, balcão SFH) abrem/comentam issue
 
 jobs:
   update:
@@ -49,20 +49,23 @@ jobs:
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json" || true
           fi
 
-      # O vigia só AVISA (o corpo vem do LLM: vai por arquivo, nunca interpolado no shell).
-      # Uma issue aberta por vez: achados seguintes viram comentário nela.
-      - name: Vigia da cota SBPE — abrir/comentar issue
-        if: hashFiles('alerta-cota.md') != ''
+      # Os vigias só AVISAM (o corpo vem do LLM: vai por arquivo, nunca interpolado no shell).
+      # alerta-<label>.md → issue com essa label; com uma já aberta, o achado vira comentário nela.
+      - name: Vigias (cota SBPE, balcão SFH) — abrir/comentar issue
+        if: hashFiles('alerta-*.md') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh label create cota-sbpe --color D93F0B --description "Vigia da cota SBPE" 2>/dev/null || true
-          ABERTA=$(gh issue list --label cota-sbpe --state open --json number --jq '.[0].number // empty')
-          if [ -n "$ABERTA" ]; then
-            gh issue comment "$ABERTA" --body-file alerta-cota.md
-          else
-            gh issue create --title "Vigia: possível mudança na cota SBPE — revisar" --label cota-sbpe --body-file alerta-cota.md
-          fi
+          for f in alerta-*.md; do
+            LABEL="${f#alerta-}"; LABEL="${LABEL%.md}"
+            gh label create "$LABEL" --color D93F0B --description "Vigia: $LABEL" 2>/dev/null || true
+            ABERTA=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+            if [ -n "$ABERTA" ]; then
+              gh issue comment "$ABERTA" --body-file "$f"
+            else
+              gh issue create --title "Vigia: possível mudança em $LABEL — revisar" --label "$LABEL" --body-file "$f"
+            fi
+          done
 
       # Depois do commit: o dado bom já foi publicado; aqui a run fica vermelha para a falha do BCB não passar em silêncio.
       - name: Falha visível se o BCB não respondeu
