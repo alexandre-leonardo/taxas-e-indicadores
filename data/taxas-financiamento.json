@@ -67,6 +67,18 @@
     "fonteUrl": "https://caixanoticias.caixa.gov.br/Paginas/Not%C3%ADcias/2025/10-OUTUBRO/CAIXA-e-Governo-Federal-fortalecem-politica-habitacional-com-novas-medidas-para-o-credito-imobiliario.aspx",
     "atualizadoEm": "2025-10-13T00:00:00.000Z"
   },
+  "sbpeBalcao": {
+    "sfh": {
+      "tetoImovel": 2250000,
+      "efetivaAnualPct": {
+        "semRelacionamento": 11.49,
+        "comRelacionamento": 11.19
+      },
+      "indexador": "TR"
+    },
+    "fonteUrl": "https://larya.com.br/blog/taxas-de-juros-financiamento-imobiliario-2026/",
+    "verificadoEm": "2026-10-03T00:00:00.000Z"
+  },
   "mcmv": {
     "tetoImovel": {
       "faixa1e2": {
@@ -84,7 +96,7 @@
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-10-03T20:11:28.519Z",
+    "retrievedAt": "2026-10-03T20:36:00.787Z",
     "publishedAt": "28/06/2026",
     "contentHash": "4aa4309f1229e2d07e6f52ccd418ff8da6559d7e87ac159d24770947ebae6c7f",
     "rulesStale": false
