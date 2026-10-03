@@ -103,7 +103,10 @@ export async function fetchIndexers(): Promise<IndexersRaw> {
  */
 export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> {
   const key = process.env.OPENROUTER_API_KEY;
-  if (!key) return null;
+  if (!key) {
+    console.log("[vigia] sem OPENROUTER_API_KEY — vigia não rodou.");
+    return null;
+  }
   try {
     const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
       method: "POST",
@@ -141,11 +144,22 @@ export async function vigiarCota(atual: CotaMaxima): Promise<AlertaCota | null> 
         max_tokens: 600,
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`::warning::[vigia] OpenRouter HTTP ${res.status} — vigia não rodou.`);
+      return null;
+    }
     const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = j?.choices?.[0]?.message?.content;
-    return content ? avaliarAlertaCota(content, atual) : null;
-  } catch {
+    if (!content) {
+      console.warn("::warning::[vigia] resposta do OpenRouter sem conteúdo — vigia não rodou.");
+      return null;
+    }
+    const alerta = avaliarAlertaCota(content, atual);
+    // ponytail: loga a resposta descartada para auditar se o filtro está barrando alucinação ou notícia real.
+    if (!alerta) console.log(`[vigia] nenhuma mudança crível. Resposta do LLM: ${content}`);
+    return alerta;
+  } catch (e) {
+    console.warn(`::warning::[vigia] erro na chamada ao OpenRouter: ${String(e)} — vigia não rodou.`);
     return null;
   }
 }
