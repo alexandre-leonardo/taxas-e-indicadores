@@ -102,12 +102,19 @@
     "subsidioMaxPorRegiao": {
       "N": 65000,
       "demais": 55000
-    }
+    },
+    "rendaMax": {
+      "faixa1": 3200,
+      "faixa2": 5000,
+      "faixa3": 9600,
+      "classeMedia": 13000
+    },
+    "prazoMaxMeses": 420
   },
   "meta": {
     "sourceUrl": "https://www.gov.br/cidades/pt-br/acesso-a-informacao/acoes-e-programas/habitacao/programa-minha-casa-minha-vida/mcmv-fgts",
     "sourceName": "Ministério das Cidades — MCMV Linha Financiada",
-    "retrievedAt": "2026-10-03T20:59:16.972Z",
+    "retrievedAt": "2026-10-03T21:04:57.797Z",
     "publishedAt": "28/06/2026",
     "contentHash": "4aa4309f1229e2d07e6f52ccd418ff8da6559d7e87ac159d24770947ebae6c7f",
     "rulesStale": false
