@@ -12,9 +12,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -47,3 +47,10 @@ jobs:
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json" || true
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json" || true
           fi
+
+      # Depois do commit: o dado bom já foi publicado; aqui a run fica vermelha para a falha do BCB não passar em silêncio.
+      - name: Falha visível se o BCB não respondeu
+        if: env.BCB_FALHOU == '1'
+        run: |
+          echo "::error::BCB SGS falhou nesta rodada — TR/poupança/índices ficaram com o valor anterior. Ver anotações acima."
+          exit 1

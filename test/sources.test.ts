@@ -1,6 +1,21 @@
 // test/sources.test.ts
-import { describe, it, expect } from "vitest";
-import { parseCotaResponse } from "../src/sources";
+import { describe, it, expect, vi } from "vitest";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { parseCotaResponse, sinalizarFalhaBcb } from "../src/sources";
+
+describe("sinalizarFalhaBcb", () => {
+  it("anexa BCB_FALHOU=1 ao arquivo do GITHUB_ENV (o step final do workflow depende disso)", () => {
+    const env = join(mkdtempSync(join(tmpdir(), "gh-env-")), "env");
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    sinalizarFalhaBcb("x", env);
+    sinalizarFalhaBcb("y", env);
+    expect(readFileSync(env, "utf-8")).toBe("BCB_FALHOU=1\nBCB_FALHOU=1\n");
+    expect(err).toHaveBeenCalledWith("::error::x");
+    err.mockRestore();
+  });
+});
 
 describe("parseCotaResponse", () => {
   it("extrai CotaRaw de JSON válido", () => {

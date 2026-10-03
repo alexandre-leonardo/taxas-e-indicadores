@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isPlausible, parseMcmvLimits, parseMcmvRatesHtml } from "./parser";
 import { decideUpdate } from "./update";
-import { fetchGovBrHtml, fetchIndexers, fetchCotaMaxima, SOURCE_URL } from "./sources";
+import { fetchGovBrHtml, fetchIndexers, fetchCotaMaxima, sinalizarFalhaBcb, SOURCE_URL } from "./sources";
 import type { RatesPayload } from "./types";
 
 // Caminho relativo a src/ — o JSON-banco vive na raiz do repo, em data/.
@@ -35,6 +35,10 @@ async function main(): Promise<void> {
 
   const mcmvRaw = parseMcmvLimits(html);
   const [raw, cotaRaw] = await Promise.all([fetchIndexers(), fetchCotaMaxima()]);
+  // Mesma régua da guarda anti-zero do decideUpdate: null/≤0 = falhou (e será preservado).
+  const valido = (v: number | null) => typeof v === "number" && v > 0;
+  const falhos = [!valido(raw.trRaw) && "TR (7811)", !valido(raw.poupRaw) && "poupança (195)"].filter(Boolean);
+  if (falhos.length) sinalizarFalhaBcb(`[scrape] BCB sem resposta válida para ${falhos.join(", ")} — valor anterior preservado.`);
   const { changed, payload } = decideUpdate(old, parsed, raw, cotaRaw, mcmvRaw, new Date(), SOURCE_URL);
 
   if (!changed) {

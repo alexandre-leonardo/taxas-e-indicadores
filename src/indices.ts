@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { decideIndices } from "./update";
-import { fetchSerieMensal, fetchPoupancaMensal } from "./sources";
+import { fetchSerieMensal, fetchPoupancaMensal, sinalizarFalhaBcb } from "./sources";
 import type { IndicesHistorico, PontoSerie, UnidadeIndice } from "./types";
 
 const DATA_PATH = fileURLToPath(new URL("../data/indices-historico.json", import.meta.url));
@@ -73,7 +73,10 @@ async function main(): Promise<void> {
     }),
   );
 
-  if (Object.values(fetched).every((v) => v == null)) {
+  const falhas = Object.keys(fetched).filter((k) => fetched[k] == null);
+  if (falhas.length) sinalizarFalhaBcb(`[indices] SGS falhou para: ${falhas.join(", ")} — valores anteriores preservados.`);
+
+  if (falhas.length === Object.keys(fetched).length) {
     // ponytail: NÃO é erro fatal — evita acoplar a falha do SGS ao commit das taxas (mesmo job).
     // Não escreve; a anti-corrupção preservaria tudo e a rodada semanal seguinte re-puxa.
     console.warn("[indices] todas as séries falharam (rede?) — mantendo o arquivo atual, sem escrever.");

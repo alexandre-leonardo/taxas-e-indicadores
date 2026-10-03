@@ -1,5 +1,6 @@
 // src/sources.ts
 // I/O de rede isolado. Sem lógica de negócio — só busca e normaliza dados das fontes.
+import { appendFileSync } from "node:fs";
 import type { CotaRaw, IndexersRaw, PontoSerie } from "./types";
 
 /** Parser puro do conteúdo do LLM (JSON) → CotaRaw. null se inválido/incompleto. */
@@ -12,6 +13,16 @@ export function parseCotaResponse(content: string): CotaRaw | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Sinaliza falha do BCB sem abortar (o valor anterior é preservado e o commit segue).
+ * Na Action: anotação ::error:: + BCB_FALHOU=1 em $GITHUB_ENV — o último step do workflow
+ * lê a marca e deixa a run vermelha DEPOIS do commit. Fora da Action: só loga.
+ */
+export function sinalizarFalhaBcb(msg: string, githubEnv = process.env.GITHUB_ENV): void {
+  console.error(`::error::${msg}`);
+  if (githubEnv) appendFileSync(githubEnv, "BCB_FALHOU=1\n");
 }
 
 export const SOURCE_URL =
