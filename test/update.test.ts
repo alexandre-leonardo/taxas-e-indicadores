@@ -74,6 +74,33 @@ describe("decideUpdate", () => {
   });
 });
 
+describe("decideUpdate — faixa2Subfaixas", () => {
+  const same = { trRaw: 0.1709, poupRaw: 0.6734 };
+  const subs = [
+    { rendaAte: 3500, cotista: { N_NE: 4.75, S_SE_CO: 5 }, naoCotista: { N_NE: 5.25, S_SE_CO: 5.5 } },
+    { rendaAte: 5000, cotista: { N_NE: 6.5, S_SE_CO: 7 }, naoCotista: { N_NE: 6.5, S_SE_CO: 7 } },
+  ];
+  const parsedComSubs = { ...parsed, faixa2Subfaixas: subs };
+  const oldComSubs = makeOld({ faixa2Subfaixas: subs, meta: { ...makeOld().meta, contentHash: sha256(JSON.stringify(parsedComSubs)) } });
+
+  it("layout da Faixa 2 quebrou (undefined): preserva as subfaixas e não reescreve", () => {
+    const r = decideUpdate(oldComSubs, { ...parsed, faixa2Subfaixas: undefined }, same, null, now, SOURCE);
+    expect(r.changed).toBe(false);
+    expect(r.payload.faixa2Subfaixas).toEqual(subs);
+  });
+
+  it("outra mudança na mesma rodada também mantém as subfaixas anteriores", () => {
+    const r = decideUpdate(oldComSubs, { ...parsed, classeMedia: 11, faixa2Subfaixas: undefined }, same, null, now, SOURCE);
+    expect(r.changed).toBe(true);
+    expect(r.payload.faixa2Subfaixas).toEqual(subs);
+  });
+
+  it("subfaixas parseadas iguais às gravadas: não reescreve", () => {
+    const r = decideUpdate(oldComSubs, parsedComSubs, same, null, now, SOURCE);
+    expect(r.changed).toBe(false);
+  });
+});
+
 describe("sha256", () => {
   it("é determinístico e hex de 64 chars", () => {
     const a = sha256("x");

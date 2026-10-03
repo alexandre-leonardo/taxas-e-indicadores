@@ -65,7 +65,10 @@ export function decideUpdate(
   now: Date,
   sourceUrl: string,
 ): { changed: boolean; payload: RatesPayload } {
-  const contentHash = sha256(JSON.stringify(parsed));
+  // Subfaixas da Faixa 2: layout não casou (undefined) → preserva as anteriores, ANTES do hash
+  // (senão o hash muda toda rodada e o campo some do JSON). Mesma regra do mcmv/indexadores.
+  const faixa2Subfaixas = parsed.faixa2Subfaixas ?? old.faixa2Subfaixas;
+  const contentHash = sha256(JSON.stringify({ ...parsed, faixa2Subfaixas }));
 
   const tr =
     typeof raw.trRaw === "number" && raw.trRaw > 0 ? raw.trRaw : old.indexers.trMonthlyPct;
@@ -98,7 +101,7 @@ export function decideUpdate(
 
   const payload: RatesPayload = {
     faixa2: parsed.faixa2,
-    faixa2Subfaixas: parsed.faixa2Subfaixas,
+    faixa2Subfaixas,
     faixa3: parsed.faixa3,
     classeMedia: parsed.classeMedia,
     indexers: { trMonthlyPct: tr, poupancaMonthlyPct: poup },
