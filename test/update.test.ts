@@ -23,6 +23,8 @@ function makeOld(over: Partial<RatesPayload> = {}): RatesPayload {
     mcmv: {
       tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
       subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+      rendaMax: { faixa1: 3200, faixa2: 5000, faixa3: 9600, classeMedia: 13000 },
+      prazoMaxMeses: 420,
     },
     meta: {
       sourceUrl: SOURCE,
@@ -163,6 +165,8 @@ describe("isMcmvPlausible", () => {
   const ok = {
     tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
     subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+    rendaMax: { faixa1: 3200, faixa2: 5000, faixa3: 9600, classeMedia: 13000 },
+    prazoMaxMeses: 420,
   };
   it("aceita limites válidos", () => {
     expect(isMcmvPlausible(ok)).toBe(true);
@@ -181,6 +185,15 @@ describe("isMcmvPlausible", () => {
   it("rejeita subsídio fora da faixa", () => {
     expect(isMcmvPlausible({ ...ok, subsidioMaxPorRegiao: { N: 5_000_000, demais: 55000 } })).toBe(false);
   });
+  it("rejeita renda fora de ordem ou fora da faixa", () => {
+    expect(isMcmvPlausible({ ...ok, rendaMax: { ...ok.rendaMax, faixa2: 3000 } })).toBe(false);
+    expect(isMcmvPlausible({ ...ok, rendaMax: { ...ok.rendaMax, classeMedia: 500_000 } })).toBe(false);
+    expect(isMcmvPlausible({ ...ok, rendaMax: undefined })).toBe(false);
+  });
+  it("rejeita prazo fora de 10–50 anos ou ausente", () => {
+    expect(isMcmvPlausible({ ...ok, prazoMaxMeses: 35 })).toBe(false);
+    expect(isMcmvPlausible({ ...ok, prazoMaxMeses: undefined })).toBe(false);
+  });
   it("rejeita campo faltando", () => {
     expect(isMcmvPlausible({ tetoImovel: ok.tetoImovel } as never)).toBe(false);
   });
@@ -191,6 +204,8 @@ describe("decideUpdate — mcmv", () => {
   const okMcmv = {
     tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
     subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+    rendaMax: { faixa1: 3200, faixa2: 5000, faixa3: 9600, classeMedia: 13000 },
+    prazoMaxMeses: 420,
   };
 
   it("mcmv null mantém old.mcmv e não marca changed", () => {

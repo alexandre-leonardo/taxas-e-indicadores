@@ -71,7 +71,13 @@ export function isMcmvPlausible(m: McmvLimits | null): m is McmvLimits {
   if (!tetos.every((v) => inRange(v, 50_000, 5_000_000))) return false;
   if (t.faixa1e2.max < t.faixa1e2.min) return false;
   const subs = [m.subsidioMaxPorRegiao.N, m.subsidioMaxPorRegiao.demais];
-  return subs.every((v) => inRange(v, 1_000, 500_000));
+  if (!subs.every((v) => inRange(v, 1_000, 500_000))) return false;
+  // Renda por faixa: R$ 1 mil–100 mil/mês e estritamente crescente. Prazo: 10–50 anos.
+  const r = m.rendaMax;
+  const rendas = r ? [r.faixa1, r.faixa2, r.faixa3, r.classeMedia] : [];
+  if (rendas.length !== 4 || !rendas.every((v, i) => inRange(v, 1_000, 100_000) && (i === 0 || v > rendas[i - 1])))
+    return false;
+  return inRange(m.prazoMaxMeses, 120, 600);
 }
 
 /**

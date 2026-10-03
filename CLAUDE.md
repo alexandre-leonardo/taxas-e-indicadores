@@ -22,6 +22,12 @@ jsDelivr. Sem banco, sem servidor — o git é o "banco" (cada commit = uma vers
 - Os limites do MCMV (`mcmv`: teto do imóvel por faixa + subsídio máximo por região) saem por parser
   determinístico do MESMO HTML do gov.br (`src/parser.ts:parseMcmvLimits`), sem LLM. Guarda
   `src/update.ts:isMcmvPlausible` preserva o valor anterior se o layout mudar.
+- O teto do imóvel das Faixas 1 e 2 **por município** fica em `data/mcmv-municipios.json`, gerado por
+  `scripts/mcmv-municipios.py` (stdlib) a partir da planilha da Caixa que o gov.br linka. A regra é
+  recorte REGIC × grupo populacional, não porte por população. Só a coluna de Faixas 1 e 2 é usada:
+  as colunas de Faixa 3 / Classe Média e os cortes de renda da planilha estão defasados em relação ao
+  gov.br (abr/2026). Detector determinístico `src/index.ts:detectarTabelaMunicipios` → issue
+  `mcmv-municipios` quando o link muda. A Caixa exige cookie no download (redirect em loop sem ele).
 - O painel de índices (`data/indices-historico.json`, via `npm run indices` → `src/indices.ts`) puxa
   10 séries do BCB SGS (TR, poupança, SELIC, IPCA, IGP-M, INCC, IVG-R, juros habitacional mercado+SFH,
   CDI) desde 2001, re-puxando o histórico inteiro a cada rodada (idempotente via `contentHash`). Guarda

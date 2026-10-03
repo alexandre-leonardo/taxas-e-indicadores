@@ -96,6 +96,9 @@ export interface AlertaCota {
 export interface McmvLimits {
   tetoImovel: { faixa1e2: { min: number; max: number }; faixa3: number; classeMedia: number };
   subsidioMaxPorRegiao: { N: number; demais: number };
+  // Aditivos (10/2026), do mesmo HTML. Opcionais só para seeds antigos: o parser sempre preenche.
+  rendaMax?: { faixa1: number; faixa2: number; faixa3: number; classeMedia: number }; // R$/mês, teto inclusivo
+  prazoMaxMeses?: number; // "prazo máximo dos financiamentos é de N anos" × 12
 }
 
 // ── Painel de índices (BCB SGS) — aditivo, arquivo próprio data/indices-historico.json ──

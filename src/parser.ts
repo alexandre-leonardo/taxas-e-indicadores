@@ -81,6 +81,14 @@ export function parseMcmvRatesHtml(html: string): ParsedRates {
  * Determinístico (sem LLM). null se qualquer trecho não casar (layout mudou → preserva old no caller).
  * Formatos: "R$ 210 mil" → ×1000; "R$ 65.000,00" → número BR.
  */
+/**
+ * Link da tabela oficial de limites por município (Caixa/Agente Operador do FGTS) que o gov.br
+ * publica. O nome do arquivo carrega a vigência (ex.: ..._VIGENCIA_01JAN2026.xlsx). null se sumiu.
+ */
+export function linkTabelaMunicipios(html: string): string | null {
+  return html.match(/href="(https?:\/\/[^"]*fgts-tabela-municipios\/[^"]+\.xlsx)"/i)?.[1] ?? null;
+}
+
 export function parseMcmvLimits(html: string): McmvLimits | null {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 
@@ -90,7 +98,18 @@ export function parseMcmvLimits(html: string): McmvLimits | null {
   const sub = text.match(
     /at[ée] R\$\s*(\d[\d.]*,\d{2}),?\s*na Regi[ãa]o Norte,\s*e at[ée] R\$\s*(\d[\d.]*,\d{2}),?\s*nas demais/i,
   );
-  if (!f12 || !f3 || !cm || !sub) return null;
+  // Renda: o teto de cada faixa é o ÚLTIMO "R$ x,xx" antes da faixa seguinte, na tabela de taxas.
+  const tStart = text.search(/TAXA DE JUROS\s+NOMINAL/i);
+  const table = tStart >= 0 ? text.slice(tStart, tStart + 1200) : "";
+  const ultimoBrl = (re: RegExp): string | undefined =>
+    [...(table.match(re)?.[1] ?? "").matchAll(/R\$\s*(\d[\d.]*,\d{2})/g)].at(-1)?.[1];
+  const r1 = ultimoBrl(/Faixa\s*1([\s\S]*?)Faixa\s*2/i);
+  const r2 = ultimoBrl(/Faixa\s*2([\s\S]*?)Faixa\s*3/i);
+  const r3 = ultimoBrl(/Faixa\s*3([\s\S]*?)Classe M[ée]dia/i);
+  const rcm = table.match(/Classe M[ée]dia at[ée] R\$\s*(\d[\d.]*,\d{2})/i)?.[1];
+  // "ﬁnanciamentos" vem com ligadura no gov.br — \S* cobre "fi"/"ﬁ".
+  const prazo = text.match(/prazo m[áa]ximo d\S+ \S*nanciamentos? [ée] de (\d+) anos/i);
+  if (!f12 || !f3 || !cm || !sub || !r1 || !r2 || !r3 || !rcm || !prazo) return null;
 
   const mil = (s: string) => parseInt(s.replace(/\./g, ""), 10) * 1000; // "210" → 210000
   const brl = (s: string) => Math.round(parseFloat(s.replace(/\./g, "").replace(",", "."))); // "65.000,00" → 65000
@@ -102,6 +121,8 @@ export function parseMcmvLimits(html: string): McmvLimits | null {
       classeMedia: mil(cm[1]),
     },
     subsidioMaxPorRegiao: { N: brl(sub[1]), demais: brl(sub[2]) },
+    rendaMax: { faixa1: brl(r1), faixa2: brl(r2), faixa3: brl(r3), classeMedia: brl(rcm) },
+    prazoMaxMeses: parseInt(prazo[1], 10) * 12,
   };
 }
 

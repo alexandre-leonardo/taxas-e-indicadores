@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseMcmvRatesHtml, isPlausible, parseMcmvLimits } from "../src/parser";
+import { parseMcmvRatesHtml, isPlausible, parseMcmvLimits, linkTabelaMunicipios } from "../src/parser";
 
 const html = readFileSync(
   fileURLToPath(new URL("./fixtures/mcmv-govbr.html", import.meta.url)),
@@ -72,9 +72,39 @@ describe("parseMcmvLimits", () => {
     expect(m).toEqual({
       tetoImovel: { faixa1e2: { min: 210000, max: 275000 }, faixa3: 400000, classeMedia: 600000 },
       subsidioMaxPorRegiao: { N: 65000, demais: 55000 },
+      rendaMax: { faixa1: 3200, faixa2: 5000, faixa3: 9600, classeMedia: 13000 },
+      prazoMaxMeses: 420,
     });
   });
   it("retorna null se a prosa não estiver presente", () => {
     expect(parseMcmvLimits("<p>página sem os limites</p>")).toBeNull();
+  });
+});
+
+describe("linkTabelaMunicipios", () => {
+  it("acha o .xlsx da Caixa na fixture real (e bate com data/mcmv-municipios.json)", () => {
+    const link = linkTabelaMunicipios(html);
+    expect(link).toBe("https://www.caixa.gov.br/Downloads/fgts-tabela-municipios/TABELA_MUNICIPIOS_VIGENCIA_01JAN2026.xlsx");
+    const pub = JSON.parse(readFileSync(fileURLToPath(new URL("../data/mcmv-municipios.json", import.meta.url)), "utf-8"));
+    expect(pub.meta.fonteUrl).toBe(link);
+  });
+  it("null quando o link some", () => {
+    expect(linkTabelaMunicipios("<a href='/outra'>x</a>")).toBeNull();
+  });
+});
+
+describe("data/mcmv-municipios.json (gerado por scripts/mcmv-municipios.py)", () => {
+  const pub = JSON.parse(readFileSync(fileURLToPath(new URL("../data/mcmv-municipios.json", import.meta.url)), "utf-8"));
+  it("5.570+ municípios únicos, tetos entre 210 mil e 275 mil, ordenados por IBGE", () => {
+    const m = pub.municipios as Array<{ ibge: number; tetoFaixa1e2: number }>;
+    expect(m.length).toBeGreaterThan(5500);
+    expect(new Set(m.map((x) => x.ibge)).size).toBe(m.length);
+    expect(m.every((x, i) => i === 0 || x.ibge > m[i - 1].ibge)).toBe(true);
+    expect(m.every((x) => x.tetoFaixa1e2 >= 210_000 && x.tetoFaixa1e2 <= 275_000)).toBe(true);
+  });
+  it("Goiânia 270 mil (B1) e Aparecida 255 mil (B2) — o porte por população daria 275/270", () => {
+    const byIbge = new Map(pub.municipios.map((x: { ibge: number }) => [x.ibge, x]));
+    expect(byIbge.get(5208707)).toMatchObject({ nome: "Goiânia", recorte: "B", grupo: 1, tetoFaixa1e2: 270000 });
+    expect(byIbge.get(5201405)).toMatchObject({ recorte: "B", grupo: 2, tetoFaixa1e2: 255000 });
   });
 });

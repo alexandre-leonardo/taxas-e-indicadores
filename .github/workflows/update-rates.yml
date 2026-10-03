@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  issues: write # vigias (cota SBPE, balcão SFH) abrem/comentam issue
+  issues: write # alertas (vigias SBPE, tabela de municípios MCMV) abrem/comentam issue
 
 jobs:
   update:
@@ -47,11 +47,12 @@ jobs:
             git push
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/taxas-financiamento.json" || true
             curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/indices-historico.json" || true
+            curl -sf "https://purge.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/mcmv-municipios.json" || true
           fi
 
-      # Os vigias só AVISAM (o corpo vem do LLM: vai por arquivo, nunca interpolado no shell).
+      # Os alertas só AVISAM (o corpo pode vir do LLM: vai por arquivo, nunca interpolado no shell).
       # alerta-<label>.md → issue com essa label; com uma já aberta, o achado vira comentário nela.
-      - name: Vigias (cota SBPE, balcão SFH) — abrir/comentar issue
+      - name: Alertas (vigias SBPE + tabela de municípios MCMV) — abrir/comentar issue
         if: hashFiles('alerta-*.md') != ''
         env:
           GH_TOKEN: ${{ github.token }}
