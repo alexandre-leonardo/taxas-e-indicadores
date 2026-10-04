@@ -13,7 +13,7 @@ describe("parseMcmvRatesHtml", () => {
   it("extrai taxas conhecidas da fixture", () => {
     const r = parseMcmvRatesHtml(html);
     expect(r.faixa3.cotista.N_NE).toBeCloseTo(7.66, 2);
-    expect(r.faixa3.cotista.S_SE_CO).toBeCloseTo(8.16, 2);
+    expect(r.faixa3.cotista.S_SE_CO).toBeCloseTo(7.66, 2);
     expect(r.classeMedia).toBeCloseTo(10.0, 2);
     expect(r.publishedAt).toMatch(/2026/);
   });
@@ -26,12 +26,14 @@ describe("parseMcmvRatesHtml", () => {
     expect(r.faixa2.naoCotista.S_SE_CO).toBeCloseTo(5.5, 2);
   });
 
-  it("extrai as 3 subfaixas de renda da Faixa 2 (linha de 2 valores = cotista igual a não cotista)", () => {
+  // Linha de 2 valores = cotista | não cotista, mesma taxa nas duas regiões. Conferido no simulador
+  // da Caixa em 03/10/2026: Goiânia (CO), cotista, renda 5.000 → 6,50% (não 7,00%).
+  it("extrai as 3 subfaixas de renda da Faixa 2 (linha de 2 valores = cotista | não cotista)", () => {
     const r = parseMcmvRatesHtml(html);
     expect(r.faixa2Subfaixas).toEqual([
       { rendaAte: 3500, cotista: { N_NE: 4.75, S_SE_CO: 5 }, naoCotista: { N_NE: 5.25, S_SE_CO: 5.5 } },
-      { rendaAte: 4000, cotista: { N_NE: 5.5, S_SE_CO: 6 }, naoCotista: { N_NE: 5.5, S_SE_CO: 6 } },
-      { rendaAte: 5000, cotista: { N_NE: 6.5, S_SE_CO: 7 }, naoCotista: { N_NE: 6.5, S_SE_CO: 7 } },
+      { rendaAte: 4000, cotista: { N_NE: 5.5, S_SE_CO: 5.5 }, naoCotista: { N_NE: 6, S_SE_CO: 6 } },
+      { rendaAte: 5000, cotista: { N_NE: 6.5, S_SE_CO: 6.5 }, naoCotista: { N_NE: 7, S_SE_CO: 7 } },
     ]);
   });
 
@@ -39,9 +41,10 @@ describe("parseMcmvRatesHtml", () => {
     expect(parseMcmvRatesHtml("<html><body>sem tabela</body></html>").faixa2Subfaixas).toBeUndefined();
   });
 
-  it("Faixa 3 naoCotista = cotista (tabela sem distinção)", () => {
+  // Conferido no simulador da Caixa em 03/10/2026: Goiânia (CO), cotista, Faixa 3 → 7,66%.
+  it("Faixa 3: cotista 7,66 e não cotista 8,16, iguais nas duas regiões", () => {
     const r = parseMcmvRatesHtml(html);
-    expect(r.faixa3.naoCotista.N_NE).toBeCloseTo(7.66, 2);
+    expect(r.faixa3.naoCotista.N_NE).toBeCloseTo(8.16, 2);
     expect(r.faixa3.naoCotista.S_SE_CO).toBeCloseTo(8.16, 2);
   });
 });

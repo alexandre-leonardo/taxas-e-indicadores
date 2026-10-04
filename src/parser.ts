@@ -5,7 +5,8 @@
 // Âncora "TAXA DE JUROS NOMINAL" isola a tabela de taxas.
 // Faixa 2 — janela 300 chars captura os 4 valores do 1º sub-bracket (`faixa2`, legado); as 3
 // subfaixas de renda saem em `faixa2Subfaixas`.
-// Faixa 3 — 2 valores; cotista === naoCotista (tabela tem uma linha só).
+// Linhas de 2 valores (Faixa 3 e subfaixas altas da Faixa 2) = cotista | não cotista, mesma taxa nas
+// duas regiões — conferido no simulador da Caixa (03/10/2026, Goiânia: cotista 6,50% e 7,66%).
 // publishedAt — "Atualizado em DD/MM/YYYY" no rodapé (busca na página inteira).
 import type { Faixa2Subfaixa, McmvLimits, ParsedRates } from "./types";
 
@@ -25,7 +26,7 @@ function pctsAfter(text: string, label: RegExp, count: number, windowSize = 600)
 
 /**
  * Linhas da Faixa 2 ("... a R$ 3.500,00 4,75% 5,00% 5,25% 5,50%"): a taxa sobe com a renda.
- * 4 valores = cotista N/NE, S/SE/CO, não cotista N/NE, S/SE/CO; 2 valores = sem distinção de cotista.
+ * 4 valores = cotista N/NE, S/SE/CO, não cotista N/NE, S/SE/CO; 2 valores = cotista, não cotista (sem região).
  * Qualquer linha fora do formato, teto fora de ordem ou taxa fora de 0–20% → undefined (sem chute).
  */
 function parseFaixa2Subfaixas(tableText: string): Faixa2Subfaixa[] | undefined {
@@ -36,7 +37,7 @@ function parseFaixa2Subfaixas(tableText: string): Faixa2Subfaixa[] | undefined {
   for (const [, teto, pcts] of rows) {
     const v = (pcts.match(/\d{1,2},\d{2}/g) ?? []).map(pct);
     if (v.length !== 2 && v.length !== 4) return undefined;
-    const [cN, cS, nN, nS] = v.length === 4 ? v : [v[0], v[1], v[0], v[1]];
+    const [cN, cS, nN, nS] = v.length === 4 ? v : [v[0], v[0], v[1], v[1]];
     out.push({ rendaAte: pct(teto), cotista: { N_NE: cN, S_SE_CO: cS }, naoCotista: { N_NE: nN, S_SE_CO: nS } });
   }
   const ok =
@@ -54,7 +55,7 @@ export function parseMcmvRatesHtml(html: string): ParsedRates {
 
   // Faixa 2 — [cotista N_NE, cotista S_SE_CO, naoCotista N_NE, naoCotista S_SE_CO]
   const f2 = pctsAfter(tableText, /Faixa\s*2/i, 4, 300);
-  // Faixa 3 — [N_NE, S_SE_CO]; cotista === naoCotista
+  // Faixa 3 — [cotista, naoCotista]; sem distinção de região
   const f3 = pctsAfter(tableText, /Faixa\s*3/i, 2);
   // Classe Média — taxa única
   const cm = pctsAfter(tableText, /Classe\s*M[eé]dia/i, 1);
@@ -68,8 +69,8 @@ export function parseMcmvRatesHtml(html: string): ParsedRates {
     },
     faixa2Subfaixas: parseFaixa2Subfaixas(tableText),
     faixa3: {
-      cotista: { N_NE: f3[0], S_SE_CO: f3[1] },
-      naoCotista: { N_NE: f3[0], S_SE_CO: f3[1] },
+      cotista: { N_NE: f3[0], S_SE_CO: f3[0] },
+      naoCotista: { N_NE: f3[1], S_SE_CO: f3[1] },
     },
     classeMedia: cm[0],
     publishedAt: dt ? dt[1] : null,

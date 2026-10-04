@@ -17,7 +17,7 @@ https://cdn.jsdelivr.net/gh/alexandre-leonardo/taxas-e-indicadores@main/data/tax
 ```json
 {
   "faixa2": { "cotista": {"N_NE":4.75,"S_SE_CO":5}, "naoCotista": {"N_NE":5.25,"S_SE_CO":5.5} },
-  "faixa3": { "cotista": {"N_NE":7.66,"S_SE_CO":8.16}, "naoCotista": {"N_NE":7.66,"S_SE_CO":8.16} },
+  "faixa3": { "cotista": {"N_NE":7.66,"S_SE_CO":7.66}, "naoCotista": {"N_NE":8.16,"S_SE_CO":8.16} },
   "classeMedia": 10,
   "indexers": { "trMonthlyPct": 0.1709, "poupancaMonthlyPct": 0.6734 },
   "cotaMaxima": { "sbpe": { "sac": 80, "price": 70 }, "fonteUrl": "https://caixanoticias.caixa.gov.br/...", "atualizadoEm": "2025-10-13T00:00:00.000Z" },
